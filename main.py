@@ -1,6 +1,8 @@
 from logger import logger
 from errors import ConnectionError
 from djitellopy import Tello, TelloException
+import cv2
+from utils import start_periodic_stats_log
 
 
 def main(tello: Tello):
@@ -10,13 +12,23 @@ def main(tello: Tello):
     except TelloException:
         raise ConnectionError
     logger.success("Connected to Tello")
-    logger.info(f"Battery: {tello.get_battery()}%")
+    start_periodic_stats_log(tello)
     
     tello.streamon()
     
     frame_reader = tello.get_frame_read()
 
-    print(frame_reader.frame)
+    while True:
+        frame = frame_reader.frame
+
+        cv2.imshow("Tello", frame)
+
+        if cv2.waitKey(1) & 0xFF == ord("q"):
+            break
+    
+    cv2.destroyAllWindows()
+
+
 
 
 
