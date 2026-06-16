@@ -16,6 +16,8 @@ def main(tello: Tello):
     
     frame_reader = tello.get_frame_read()
 
+    print(frame_reader.frame)
+
 
 
 
@@ -35,6 +37,7 @@ if __name__ == "__main__":
 
     try:
         main(tello)
+        handle_program_exit(tello)
 
     except KeyboardInterrupt:
         logger.info("Keyboard interruped - \033[91mSTOPPING\033[0m")
