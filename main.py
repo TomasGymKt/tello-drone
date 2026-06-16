@@ -20,6 +20,7 @@ def main(tello: Tello):
 
     while True:
         frame = frame_reader.frame
+        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR) # Color correction
 
         cv2.imshow("Tello", frame)
 

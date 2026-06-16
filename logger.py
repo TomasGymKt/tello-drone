@@ -1,6 +1,5 @@
 from enum import Enum
 from datetime import datetime
-from typing import Any
 
 
 class LogLevel(Enum):
@@ -53,7 +52,7 @@ class Logger:
     self,
     level: LogLevel,
     message: str | list[str],
-    meta: dict[str, Any] | None = None
+    meta: object | None = None
   ) -> None:
     if not self._should_log(level):
       return
@@ -82,25 +81,25 @@ class Logger:
     if meta:
       print(meta)
 
-  def test(self, message, meta=None):
+  def test(self, message: str | list[str], meta: object = None):
     self._write(LogLevel.TEST, message, meta)
 
-  def debug(self, message, meta=None):
+  def debug(self, message: str | list[str], meta: object = None):
     self._write(LogLevel.DEBUG, message, meta)
 
-  def info(self, message, meta=None):
+  def info(self, message: str | list[str], meta: object = None):
     self._write(LogLevel.INFO, message, meta)
 
-  def success(self, message, meta=None):
+  def success(self, message: str | list[str], meta: object = None):
     self._write(LogLevel.INFO, f"\033[92m{message}\033[0m", meta)
 
-  def warn(self, message, meta=None):
+  def warn(self, message: str | list[str], meta: object = None):
     self._write(LogLevel.WARN, message, meta)
 
-  def error(self, message, meta=None):
+  def error(self, message: str | list[str], meta: object = None):
     self._write(LogLevel.ERROR, message, meta)
 
-  def fatal(self, message, meta=None):
+  def fatal(self, message: str | list[str], meta: object = None):
     self._write(LogLevel.FATAL, message, meta)
 
 
