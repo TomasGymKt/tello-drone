@@ -2,7 +2,11 @@ from logger import logger
 from errors import ConnectionError
 from djitellopy import Tello, TelloException
 import cv2
-from utils import start_periodic_stats_log
+from utils import start_periodic_stats_log, draw_qrcodes
+from fly import start_flying_thread
+from config import IP_ADDRES
+import zxingcpp
+
 
 
 def main(tello: Tello):
@@ -18,9 +22,15 @@ def main(tello: Tello):
     
     frame_reader = tello.get_frame_read()
 
+
+    # start_flying_thread(tello)
+
+
     while True:
         frame = frame_reader.frame
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR) # Color correction
+
+        draw_qrcodes(frame)
 
         cv2.imshow("Tello", frame)
 
@@ -46,7 +56,7 @@ def handle_program_exit(tello: Tello):
 if __name__ == "__main__":
     logger.success("Starting program...")
 
-    tello = Tello()
+    tello = Tello(host=IP_ADDRES)
 
     try:
         main(tello)

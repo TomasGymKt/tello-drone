@@ -1,4 +1,6 @@
+DEFAULT_TELLO_IP = '192.168.10.1'
 
+IP_ADDRES = DEFAULT_TELLO_IP # 127.0.0.1 for emulator / DEFAULT_TELLO_IP
 
 
 # Specifications from official documention
