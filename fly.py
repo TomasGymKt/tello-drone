@@ -1,6 +1,5 @@
 import threading
 from djitellopy import Tello, BackgroundFrameRead
-import time
 from utils import get_qr_code
 from logger import logger
 

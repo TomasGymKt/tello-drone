@@ -5,7 +5,6 @@ import cv2
 from utils import start_periodic_stats_log, draw_qrcodes, draw_cernter_cross
 from fly import start_flying_thread
 from config import IP_ADDRES
-import zxingcpp
 
 
 
