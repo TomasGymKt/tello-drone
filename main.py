@@ -4,7 +4,8 @@ from djitellopy import Tello, TelloException
 import time
 from keyboard import is_pressed
 import cv2
-import turtle
+
+
 
 def main(tello: Tello):
 
@@ -14,13 +15,13 @@ def main(tello: Tello):
         raise ConnectionError
     logger.success("Connected to Tello")
     logger.info(f"Battery: {tello.get_battery()}%")
-    
+    tello.set_video_fps(tello.FPS_5)
     tello.set_speed(40)
     tello.streamon()
     time.sleep(2)
     frame_read = tello.get_frame_read()
     #tello.set_video_resolution(Tello.RESOLUTION_480P)
-    tello.set_video_fps(Tello.FPS_5)
+    # tello.set_video_fps(Tello.FPS_5)
     
 
 
@@ -31,9 +32,38 @@ def main(tello: Tello):
         img = frame_read.frame
         img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         cv2.imshow("Tello Live Stream", img_rgb)
-        
+        cv2.im   
+
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
+
+        decode_qr(img_rgb)
+        
+        
+
+def decode_qr(image):
+    detector = cv2.QRCodeDetector()
+
+    retval, decoded_info, points, _ = detector.detectAndDecodeMulti(image)
+
+    if retval:
+        for qr_data in decoded_info:
+            if qr_data:
+                print(f"Nalezen QR kód: {qr_data}")
+            else:
+                print("QR kód detekován, ale nepodařilo se jej přečíst.")
+    else:
+        print("V obrázku nebyl nalezen žádný QR kód.")
+
+#        3. Loop through and print results
+        # for code in detected_codes:
+        #     # Data is returned as bytes, decode it to a string
+        #     data_string = code.data.decode("utf-8")
+        #     code_type = code.type
+
+        #     print(f"Type: {code_type}")
+        #     print(f"Data: {data_string}")
+
         # while is_pressed('left'):
         #     tello.rotate_counter_clockwise(45)
         # while is_pressed('right'):
