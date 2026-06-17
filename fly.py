@@ -8,7 +8,7 @@ def move_to_qr_code(tello: Tello, error_x: int, error_y: int, distance_cm: float
     DEAD_ZONE_Y = 40
     DEAD_ZONE_DISTANCE = 15
 
-    ERROR_Y_OFFSET = 30 # Because of the angle of the camera the drone flys higher then it shoudld
+    ERROR_Y_OFFSET = 0 # Because of the angle of the camera the drone flys higher then it shoudld
 
     error_y -= ERROR_Y_OFFSET
 
