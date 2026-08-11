@@ -1,7 +1,7 @@
 import threading
 from djitellopy import Tello, BackgroundFrameRead
-from utils import get_qr_code
-from logger import logger
+from utils.models import SharedQR
+from utils.logger import logger
 
 def move_to_qr_code(tello: Tello, error_x: int, error_y: int, distance_cm: float, SPEED: int=20):
     DEAD_ZONE_X = 40
@@ -45,24 +45,21 @@ def move_to_qr_code(tello: Tello, error_x: int, error_y: int, distance_cm: float
 
 
 
-def main_loop(tello: Tello, frame_reader: BackgroundFrameRead):
+def main_loop(tello: Tello, shared_qr: SharedQR):
     tello.takeoff()
 
     while True:
-        frame = frame_reader.frame
-        qr_code = get_qr_code(frame)
+        qr = shared_qr.get()
 
-        if qr_code == None:
+        if qr == None:
             tello.send_rc_control(0, 0, 0, 0)    # zastav
             continue
 
-        points, text, (center_x, center_y), size, distance_cm, (error_x, error_y) = qr_code
+        move_to_qr_code(tello, qr.error_xy.x, qr.error_xy.y, qr.distance_cm)
 
-        move_to_qr_code(tello, error_x, error_y, distance_cm)
+        text = (qr.text or "").lower()
 
-        text = text.lower()
-
-        if distance_cm < 60 and distance_cm > 40:
+        if qr.distance_cm < 60 and qr.distance_cm > 40:
             if text == "vlevo":
                 tello.rotate_counter_clockwise(90)
             elif text == "vpravo":
@@ -76,6 +73,6 @@ def main_loop(tello: Tello, frame_reader: BackgroundFrameRead):
 
 
 
-def start_flying_thread(tello: Tello, frame_reader: BackgroundFrameRead):
-    thread = threading.Thread(target=main_loop, args={tello: tello, frame_reader: frame_reader}, daemon=True)
+def start_flying_thread(tello: Tello, shared_qr: SharedQR):
+    thread = threading.Thread(target=main_loop, args=(tello, shared_qr), daemon=True)
     thread.start()
