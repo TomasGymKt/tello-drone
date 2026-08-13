@@ -1,7 +1,7 @@
 import threading
 from djitellopy import Tello, BackgroundFrameRead
 from utils.models import SharedQR
-from utils.logger import logger
+from utils.Logger import logger
 
 def move_to_qr_code(tello: Tello, error_x: int, error_y: int, distance_cm: float, SPEED: int=20):
     DEAD_ZONE_X = 40

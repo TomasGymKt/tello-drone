@@ -3,6 +3,7 @@ from utils.models import QR_Code
 from utils.color import generate_colors
 from config import SCAN_CONTOURS_METHOD
 from .base import Scanner as BaseScanner
+from utils.DebugFrames import debug_frames
 
 number = 0
 count = 0
@@ -31,7 +32,7 @@ def get_contours(frame) -> QR_Code | None:
 
     binary = cv2.bitwise_not(binary)
 
-    cv2.imshow("Binary Frame", binary)
+    debug_frames.set("Binary Frame", binary)
     
     # canny = cv2.Canny(gray, 125, 175)
     # cv2.imshow("Canny edge", canny)
@@ -83,7 +84,7 @@ def get_contours(frame) -> QR_Code | None:
     
     
     cv2.putText(canvas, f"{number+off}", (7, 35), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 0), 2)
-    cv2.imshow("Contours Canvas", canvas)
+    debug_frames.set("Contours Canvas", canvas)
     return None
 
 

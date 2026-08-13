@@ -1,5 +1,5 @@
 import colorsys
-from utils.logger import logger
+from utils.Logger import logger
 
 class C:
     RESET  = "\033[0m"

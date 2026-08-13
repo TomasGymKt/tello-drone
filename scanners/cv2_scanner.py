@@ -1,13 +1,19 @@
 import cv2
 from utils.models import Corners, Int_Vector2, QR_Code
 from utils.common import qr_size
+from utils.Logger import logger
+from utils.errors import ScanningError
 from config import SCAN_CV2_METHOD
 from .base import Scanner as BaseScanner
 
 
 detector = cv2.QRCodeDetector()
 def cv2_QR_scan(frame, try_decode=True) -> QR_Code | None:
-    success, points = detector.detect(frame)
+    try:
+        success, points = detector.detect(frame)
+    except Exception as e:
+        logger.error("cv2 QR code DETECTION threw an error", e)
+        raise ScanningError("cv2", e)
 
     if not success or points is None:
         return None
@@ -15,7 +21,11 @@ def cv2_QR_scan(frame, try_decode=True) -> QR_Code | None:
     
     text = None
     if try_decode:
-        text, _ = detector.decode(frame, points)
+        try:
+            text, _ = detector.decode(frame, points)
+        except Exception as e:
+            logger.error("cv2 QR code DECODE threw an error", e)
+            raise ScanningError("cv2", e)
     if not text:
         text = None
 

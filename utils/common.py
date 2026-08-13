@@ -1,15 +1,19 @@
+from __future__ import annotations
 import subprocess
+import cv2
 from djitellopy import Tello
 import threading
 import time
 import math
-from utils.logger import logger
-from utils.models import Corners
+from typing import TYPE_CHECKING
+from utils.Logger import logger
+from utils.models import Corners, MouseData
 from utils.errors import ConnectionError
 from utils.color import C, colorful_battery, colorful_temperature
-from draw import draw_info
 from config import IS_EMULATOR
 
+if TYPE_CHECKING:
+    from UI.Elements.Element import Element
 
 
 def _log_stats(tello: Tello, period: int):
@@ -38,85 +42,6 @@ def qr_size(points: Corners) -> float:
     return (top + right + bottom + left) / 4
 
 
-
-def distance(a, b):
-    return math.hypot(
-        a[0] - b[0],
-        a[1] - b[1]
-    )
-
-
-class FPSCounter:
-    pos_x = 7
-    pos_y = 25
-    opacity = 0.5
-    color = (0, 255, 0)
-    
-    fontSize = 0.6
-    fontThickness = 1
-    
-    count = -1
-    
-    
-    def __init__(self, decay=1.5, pos_x=pos_x, pos_y=pos_y, opacity=opacity, fontSize=fontSize, fontThickness=fontThickness):
-        self.pos_x = pos_x
-        self.pos_y = pos_y
-        self.opacity = opacity
-        self.fontSize = fontSize
-        self.fontThickness = fontThickness
-        
-        self.last_time = time.time()
-        self.fps = -1
-        
-        self.decay = decay
-        self.init_time = time.time()
-        
-
-    def update(self) -> tuple[float, int]:
-        current_time = time.time()
-        
-        # Don't update the FPS until the decay fades away
-        if current_time - self.decay < self.init_time:
-            self.last_time = current_time
-            return self.fps, self.count
-        
-        
-        self.count += 1
-
-        instant_fps = 1 / (current_time - self.last_time)
-
-        # Set the starting FPS
-        if self.count == 2:
-            self.fps = instant_fps
-            self.last_time = current_time
-            return self.fps, self.count
-        
-        self.fps = self.fps * 0.7 + instant_fps * 0.3
-        self.last_time = current_time
-
-        return self.fps, self.count
-    
-    def draw(self, frame) -> None:
-        text = f"FPS: {self.fps:.1f}"
-        
-        draw_info(frame, text, self.pos_x, self.pos_y, self.color, opacity=self.opacity, fontSize=self.fontSize, fontThickness=self.fontThickness)
-
-
-class FrameTracker:
-    def __init__(self):
-        self._last_frame_id = None
-
-    def is_new_frame(self, frame) -> bool:
-        frame_id = id(frame)
-
-        if frame_id == self._last_frame_id:
-            return False
-
-        self._last_frame_id = frame_id
-        return True
-
-
-
 def get_wifi_connection() -> str | None:
     ssids = subprocess.check_output(
         [
@@ -137,7 +62,7 @@ def get_wifi_connection() -> str | None:
 
 def check_wifi():
     if IS_EMULATOR:
-        logger.info("Skipping wifi chek, because of emulator")
+        logger.info("Skipping wifi check, because of emulator")
         return
     
     wifi = get_wifi_connection()
@@ -146,4 +71,49 @@ def check_wifi():
     if not wifi.startswith("TELLO"):
         raise ConnectionError(f"Conncted to {C.BOLD}wrong wifi{C.RESET} - {wifi}")
     
-    logger.info(f"WiFi connction: {wifi}")
+    logger.info(f"WiFi connction: {C.BOLD}{wifi}{C.RESET}")
+
+
+def is_mouse_in_bounding_box(mouse: MouseData, x1: int, y1: int, x2: int, y2: int) -> bool:
+    return mouse.x >= x1 and mouse.x <= x2 and mouse.y >= y1 and mouse.y <= y2
+
+
+def get_elements_bounding_box(elements: list[Element], include_nested: bool = False) -> tuple[int, int, int, int] | None:
+    from UI.Elements.Container import Container
+    from UI.Elements.Radio import RadioGroup
+    bounds = []
+
+    def collect(elements: list[Element]):
+        for element in elements:
+            if isinstance(element, Container):
+                if include_nested:
+                    collect(element.elements)
+                continue
+
+            if isinstance(element, RadioGroup):
+                if include_nested:
+                    collect(element.radios)
+                continue
+
+            bounds.append((element._x1, element._y1, element._x2, element._y2))
+
+    collect(elements)
+
+    if not bounds:
+        return None
+
+    return (
+        min(bound[0] for bound in bounds),
+        min(bound[1] for bound in bounds),
+        max(bound[2] for bound in bounds),
+        max(bound[3] for bound in bounds),
+    )
+
+def is_window_open(window_name: str) -> bool:
+    try:
+        return cv2.getWindowProperty(
+            window_name,
+            cv2.WND_PROP_VISIBLE,
+        ) >= 1
+    except cv2.error:
+        return False
