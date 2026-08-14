@@ -1,7 +1,7 @@
 import cv2
 from utils.models import AlphaColor, Color, QR_Code
 
-from UI.Elements import Container, Line
+from UI.elements import Container, Line
 
 
 

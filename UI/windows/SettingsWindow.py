@@ -1,15 +1,15 @@
 import cv2
 import numpy as np
 
-from UI.Elements import Button, ButtonStyle, RadioGroup, Radio, RadioStyle, Text, Slider, Container
-from UI.Pages.Page import Page
+from UI.elements import Button, ButtonStyle, RadioGroup, Radio, RadioStyle, Text, Slider, Container
+from UI.windows.Window import Window
 from utils.Logger import logger
 from utils.common import is_window_open
 from utils.models import AlphaColor, Color
 
-class SettingsPage(Page):
-    def __init__(self):
-        super().__init__("Settings")
+class SettingsWindow(Window):
+    def __init__(self, window_name="Settings"):
+        super().__init__(window_name)
         self._base_frame = np.full((600, 600, 3), 255, dtype=np.uint8)
     
     def render(self):
@@ -25,20 +25,20 @@ class SettingsPage(Page):
         cv2.imshow(self.window_name, frame)
 
 
-def create_settings_open_close_button(settingsPage: SettingsPage, x: int, y: int) -> Button:
+def create_settings_open_close_button(settingsWindow: SettingsWindow, x: int, y: int) -> Button:
     def callback():
-        settingsPage.set_enabled(not settingsPage.enabled)
+        settingsWindow.set_enabled(not settingsWindow.enabled)
         
     return Button(
         x, y,
-        "Close Settings" if settingsPage.enabled else "Open Settings",
+        "Close Settings" if settingsWindow.enabled else "Open Settings",
         callback,
-        ButtonStyle(background_color=(AlphaColor(84, 135, 25) if settingsPage.enabled else AlphaColor(69, 53, 220)))
+        ButtonStyle(background_color=(AlphaColor(84, 135, 25) if settingsWindow.enabled else AlphaColor(69, 53, 220)))
     )
 
 
 
-settings = SettingsPage()
+settings = SettingsWindow()
 root = settings.root
 
 root.add(Button(7, 7, "Debug Render", lambda: root.set_debug_render(not root._show_debug_render), ButtonStyle(Color(0, 255, 0), AlphaColor(50, 50, 50))))

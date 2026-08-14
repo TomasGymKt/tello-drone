@@ -10,11 +10,11 @@ from utils.models import Color, MouseData, SharedQR
 from utils.DebugFrames import debug_frames
 from utils.PerformanceDisplay import PerformanceDisplay
 from utils.qr_validation import debug_is_plausible_qr_code
-from UI.Pages.CameraPage import cameraPage, set_found_result
+from UI.windows.CameraWindow import cameraWindow, set_found_result
 from draw import draw_cernter_cross, draw_qrcodes
 from scan import ScanWorker
 from fly import start_flying_thread
-from UI.Pages.SettingsPage import settings, create_settings_open_close_button
+from UI.windows.SettingsWindow import settings, create_settings_open_close_button
 
 
 
@@ -26,7 +26,7 @@ def main(tello: Tello):
         tello.connect()
     except TelloException:
         raise ConnectionError("Failed to connect")
-    logger.success("Connected to Tello")
+    logger.success(f"{C.BOLD}Connected to Tello{C.RESET}")
     start_periodic_stats_log(tello)
 
     
@@ -46,7 +46,7 @@ def main(tello: Tello):
 
     time.sleep(1)
 
-    ui = cameraPage.root
+    ui = cameraWindow.root
 
     ui.add(performance_display.container)
     ui.add(create_settings_open_close_button(settings, -7, -7))
@@ -99,7 +99,7 @@ def main(tello: Tello):
             
             
             
-            cameraPage.render(canvas)
+            cameraWindow.render(canvas)
             settings.render()
             
             # Draw windows from DebugFrames, used in other threads since cv2 doesn't render windows in other threads

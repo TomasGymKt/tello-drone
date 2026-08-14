@@ -1,12 +1,12 @@
 from abc import ABC, abstractmethod
 import cv2
 
-from UI.Elements import Container
+from UI.elements import Container
 from utils.models import MouseData
 from utils.Logger import logger
 
 
-class Page(ABC):
+class Window(ABC):
     def __init__(self, window_name: str):
         self.window_name = window_name
         

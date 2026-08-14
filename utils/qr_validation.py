@@ -1,7 +1,7 @@
 import math
 from typing import Literal
 from utils.models import Color, QR_Code
-from UI.Elements.Text import Text, TextStyle
+from UI.elements.Text import Text, TextStyle
 from config import QR_CODE_VALIDATION_DEFAULT_PLAUSIBLE_PRESET
 
 from utils.DebugFrames import debug_frames, create_blank_frame

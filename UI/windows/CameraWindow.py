@@ -1,14 +1,14 @@
 import cv2
 
-from UI.Elements import Container, Text, TextStyle
-from UI.Pages.Page import Page
+from UI.elements import Container, Text, TextStyle
+from UI.windows.Window import Window
 from utils.common import is_window_open
 from utils.models import Color
 
 
-class CameraPage(Page):
-    def __init__(self):
-        super().__init__("Tello")
+class CameraWindow(Window):
+    def __init__(self, window_name="Tello"):
+        super().__init__(window_name)
         self._enabled = True
         self._window_handle()
     
@@ -23,8 +23,8 @@ class CameraPage(Page):
         cv2.imshow(self.window_name, frame)
 
 
-cameraPage = CameraPage()
-ui = cameraPage.root
+cameraWindow = CameraWindow()
+ui = cameraWindow.root
 
 result_found_container: Container = ui.add(Container())
 result_not_found_container: Container = ui.add(Container())

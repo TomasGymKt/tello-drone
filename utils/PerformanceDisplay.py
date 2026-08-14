@@ -1,6 +1,6 @@
 import time
 
-from UI.Elements import Container, Text, TextStyle
+from UI.elements import Container, Text, TextStyle
 from utils.models import Color
 
 

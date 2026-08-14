@@ -13,7 +13,7 @@ from utils.color import C, colorful_battery, colorful_temperature
 from config import IS_EMULATOR
 
 if TYPE_CHECKING:
-    from UI.Elements.Element import Element
+    from UI.elements.Element import Element
 
 
 def _log_stats(tello: Tello, period: int):
@@ -79,8 +79,8 @@ def is_mouse_in_bounding_box(mouse: MouseData, x1: int, y1: int, x2: int, y2: in
 
 
 def get_elements_bounding_box(elements: list[Element], include_nested: bool = False) -> tuple[int, int, int, int] | None:
-    from UI.Elements.Container import Container
-    from UI.Elements.Radio import RadioGroup
+    from UI.elements.Container import Container
+    from UI.elements.Radio import RadioGroup
     bounds = []
 
     def collect(elements: list[Element]):

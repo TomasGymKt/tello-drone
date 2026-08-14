@@ -1,8 +1,8 @@
 import cv2
 from dataclasses import dataclass
 
-from UI.Elements.Element import Element
-from UI.Elements.Shapes import Rectangle
+from UI.elements.Element import Element
+from UI.elements.Shapes import Rectangle
 from utils.models import Color, AlphaColor, MouseData, Padding
 
 @dataclass(slots=True)

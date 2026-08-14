@@ -1,6 +1,6 @@
 import cv2
 
-from UI.Elements.Element import Element
+from UI.elements.Element import Element
 from utils.models import Color, AlphaColor, MouseData
 
 class Line(Element):

@@ -3,8 +3,8 @@ from typing import Callable
 
 import cv2
 
-from UI.Elements.Element import Element
-from UI.Elements.Shapes import Rectangle
+from UI.elements.Element import Element
+from UI.elements.Shapes import Rectangle
 from utils.common import is_mouse_in_bounding_box
 from utils.models import AlphaColor, Color, Padding, MouseData
 
