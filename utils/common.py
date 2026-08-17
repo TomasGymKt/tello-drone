@@ -1,4 +1,6 @@
 from __future__ import annotations
+from collections import deque
+from functools import wraps
 import subprocess
 import cv2
 from djitellopy import Tello
@@ -32,14 +34,6 @@ def start_periodic_stats_log(tello: Tello, period: int=10) -> None:
     thread = threading.Thread(target=_log_stats, args=(tello, period), daemon=True)
     thread.start()
 
-
-def qr_size(points: Corners) -> float:
-    top = math.dist(points.top_left, points.top_right)
-    right = math.dist(points.top_right, points.bottom_right)
-    bottom = math.dist(points.bottom_right, points.bottom_left)
-    left = math.dist(points.bottom_left, points.top_left)
-
-    return (top + right + bottom + left) / 4
 
 
 def get_wifi_connection() -> str | None:
@@ -81,6 +75,7 @@ def is_mouse_in_bounding_box(mouse: MouseData, x1: int, y1: int, x2: int, y2: in
 def get_elements_bounding_box(elements: list[Element], include_nested: bool = False) -> tuple[int, int, int, int] | None:
     from UI.elements.Container import Container
     from UI.elements.Radio import RadioGroup
+    from UI.elements.Shapes import Circle
     bounds = []
 
     def collect(elements: list[Element]):
@@ -95,6 +90,10 @@ def get_elements_bounding_box(elements: list[Element], include_nested: bool = Fa
                     collect(element.radios)
                 continue
 
+            if isinstance(element, Circle):
+                bounds.append((element._x-element._radius, element._y-element._radius, element._x+element._radius, element._y+element._radius))
+                continue
+            
             bounds.append((element._x1, element._y1, element._x2, element._y2))
 
     collect(elements)
@@ -117,3 +116,46 @@ def is_window_open(window_name: str) -> bool:
         ) >= 1
     except cv2.error:
         return False
+
+
+def timer(print_interval=0, highest=3, lowest=3):
+    def decorator(func):
+        times = deque(maxlen=16)
+        last_print = 0
+
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            nonlocal last_print
+
+            start = time.perf_counter()
+
+            result = func(*args, **kwargs)
+
+            elapsed = (time.perf_counter() - start) * 1000
+            times.append(elapsed)
+            now = time.perf_counter()
+
+            if now - last_print >= print_interval:
+                sorted_times = sorted(times)
+
+                minimum = sorted_times[0]
+                maximum = sorted_times[-1]
+                average = sum(times) / len(times)
+
+                lowest_avg = sum(sorted_times[:lowest]) / min(lowest, len(times))
+                highest_avg = sum(sorted_times[-highest:]) / min(highest, len(times))
+
+                logger.debug(
+                    f"{C.DIM     }Timer{C.RESET} '{func.__name__}' | "
+                    f"{C.FG_RED  }Min: {minimum:7.3f} ms{C.RESET} | "
+                    f"{C.FG_GREEN}Max: {maximum:7.3f} ms{C.RESET} | "
+                    f"{C.FG_BLUE }Avg: {average:7.3f} ms{C.RESET} {C.DIM}| "
+                    f"{C.FG_RED  }Bottom {lowest} avg: {lowest_avg:7.3f} ms{C.FG_WHITE} | "
+                    f"{C.FG_GREEN}Top {highest} avg: {highest_avg:7.3f} ms{C.RESET}"
+                )
+
+                last_print = now
+
+            return result
+        return wrapper
+    return decorator

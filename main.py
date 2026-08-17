@@ -2,20 +2,17 @@ from djitellopy import Tello, TelloException
 import cv2
 import time
 
-from config import DRAW_GHOST_QR_CODE, DRAW_REJECTED_QR_CODES, IP_ADDRES, IS_DEBUG, IS_EMULATOR
+from config import IP_ADDRES, IS_DEBUG, IS_EMULATOR
 from utils.Logger import logger
 from utils.errors import ConnectionError
-from utils.common import start_periodic_stats_log, check_wifi, C
-from utils.models import Color, MouseData, SharedQR
+from utils.common import start_periodic_stats_log, check_wifi
+from utils.color import C
+from utils.models import SharedQR
 from utils.DebugFrames import debug_frames
-from utils.PerformanceDisplay import PerformanceDisplay
-from utils.qr_validation import debug_is_plausible_qr_code
-from UI.windows.CameraWindow import cameraWindow, set_found_result
-from draw import draw_cernter_cross, draw_qrcodes
-from scan import ScanWorker
+from utils.qr_validation import debug_is_plausible_qr_code, is_plausible_qr_code
+from UI.windows.WindowController import WindowController
+from ScanWorker import ScanWorker
 from fly import start_flying_thread
-from UI.windows.SettingsWindow import settings, create_settings_open_close_button
-
 
 
 def main(tello: Tello):
@@ -37,72 +34,34 @@ def main(tello: Tello):
 
     shared_qr = SharedQR()
     # start_flying_thread(tello, shared_qr)
-    scan_worker = ScanWorker(["cv2"])
+    scan_worker = ScanWorker()
     
-    performance_display = PerformanceDisplay()
-    last_found_qr = None
-    last_found_qr_time = None
-    rejected_qr_code_points = None
 
     time.sleep(1)
+    
+    windowController = WindowController()
 
-    ui = cameraWindow.root
-
-    ui.add(performance_display.container)
-    ui.add(create_settings_open_close_button(settings, -7, -7))
-
+    logger.info(f"{C.BOLD}Initialization complete{C.RESET}")
     try:
         while True:
             frame = frame_reader.frame
             frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR) # Color correction
 
             scan_worker.submit_frame(frame)
-            result, last_scan_ms, last_scan_finished_at = scan_worker.get_latest_result()
+            result = scan_worker.get_latest_result()
             
             # Rejected non-square-ish QR Codes
-            if result is not None and not debug_is_plausible_qr_code(result.qr_code):
-                rejected_qr_code_points = result.qr_code.points
-                result = None
+            if result.success and not debug_is_plausible_qr_code(result.qr_code):
+                result.success = False
             
-            if result is not None:
+            if result.success:
                 shared_qr.set(result.qr_code)
             else:
                 shared_qr.set(None)
             
-            # Draw
-            canvas = frame.copy()
+            windowController.render(frame, result)
             
-            
-            if DRAW_GHOST_QR_CODE and last_found_qr is not None:
-                opacity = 0.4-(time.perf_counter()-last_found_qr_time)*1.5
-                if opacity > 0:
-                    draw_qrcodes(canvas, last_found_qr, opacity=opacity)
-
-            if DRAW_REJECTED_QR_CODES and rejected_qr_code_points is not None:
-                for i in range(4):
-                    rejected_canvas = canvas.copy()
-                    cv2.line(rejected_canvas, rejected_qr_code_points[i], rejected_qr_code_points[(i + 1) % 4], (0, 0, 255), 1)
-                    cv2.addWeighted(rejected_canvas, 0.35, canvas, 0.65, 0, canvas)
-                rejected_qr_code_points = None
-
-            if result is not None:
-                draw_qrcodes(canvas, result.qr_code)
-                set_found_result(True, result.scan_method)
-                last_found_qr = result.qr_code
-                last_found_qr_time = time.perf_counter()
-            else:
-                set_found_result(False)
-            
-                
-            draw_cernter_cross(canvas, ui)
-            performance_display.update(last_scan_finished_at, last_scan_ms)
-            
-            
-            
-            cameraWindow.render(canvas)
-            settings.render()
-            
-            # Draw windows from DebugFrames, used in other threads since cv2 doesn't render windows in other threads
+            # Draw windows from DebugFrames, useful in other threads since cv2 doesn't render windows in other threads
             for window_name, debug_frame in debug_frames.get_all().items():
                 cv2.imshow(window_name, debug_frame)
 
@@ -118,7 +77,12 @@ def handle_program_exit(tello: Tello):
 
     logger.info("Exiting program...")
     cv2.destroyAllWindows()
-    tello.end()
+    while True: # If you spam Ctrl+C, it exits early
+        try:
+            tello.end() # and this doesn't finish
+            break
+        except KeyboardInterrupt:
+            logger.info(f"Don't spam Ctrl+C, it is {C.BOLD}already stoping{C.RESET} the drone")
     logger.success(f"{C.BOLD}Successfuly exited program{C.RESET}")
 
 

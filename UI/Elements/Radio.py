@@ -222,5 +222,8 @@ class RadioGroup(Element):
             radio.set_debug_render(enabled)
     
     def _debug_render(self, frame):
-        x1, y1, x2, y2 = get_elements_bounding_box(self._radios, include_nested=False)
+        box = get_elements_bounding_box(self._radios, include_nested=False)
+        if box is None:
+            return
+        x1, y1, x2, y2 = box
         cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 1)

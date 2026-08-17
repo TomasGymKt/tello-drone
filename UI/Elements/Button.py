@@ -11,8 +11,12 @@ from utils.models import AlphaColor, Color, Padding, MouseData
 
 @dataclass(slots=True)
 class ButtonStyle:
-    color: Color = Color(255, 255, 255)
+    color: Color = Color(220, 220, 220)
     background_color: AlphaColor = AlphaColor(0, 0, 0, 1.0)
+    hoverd_color: Color | None = None
+    hoverd_background_color: AlphaColor | None = None
+    pressed_color: Color | None = None
+    pressed_background_color: AlphaColor | None = None
     padding: Padding = Padding(5)
     fontSize: float = 0.6
     fontThickness: int = 1
@@ -95,28 +99,31 @@ class Button(Element):
             self._set_frame_size_on_render = False
             self.set_new_frame_size(frame)
         
-        opacity = self._style.background_color.alpha
-        
+        color = self._style.color
+        background_color = self._style.background_color
 
         if self.is_hovered:
-            opacity *= 0.9
+            color = self._style.hoverd_color or self._style.color
+            background_color = self._style.hoverd_background_color or AlphaColor(self._style.background_color, self._style.background_color.alpha*0.8)
         
         if self.is_pressed:
-            opacity *= 0.6
+            color = self._style.pressed_color or self._style.color
+            background_color = self._style.pressed_background_color or AlphaColor(self._style.background_color, self._style.background_color.alpha*0.6)
+            
         
         Rectangle(
             self._x1, self._y1, self._x2, self._y2,
-            AlphaColor(self._style.background_color, opacity)
+            AlphaColor(background_color, background_color.alpha)
         ).render(frame)
-        cv2.putText(frame, self._text, (self._x1 + self._style.padding.left, self._y1 + self._text_height + self._style.padding.top), cv2.FONT_HERSHEY_SIMPLEX, self._style.fontSize, self._style.color, self._style.fontThickness)
+        cv2.putText(frame, self._text, (self._x1 + self._style.padding.left, self._y1 + self._text_height + self._style.padding.top), cv2.FONT_HERSHEY_SIMPLEX, self._style.fontSize, color, self._style.fontThickness)
         
         if self._show_debug_render:
-            self._degub_render(frame)
+            self._debug_render(frame)
         
     def set_debug_render(self, enabled: bool):
         self._show_debug_render = enabled
     
-    def _degub_render(self, frame):
+    def _debug_render(self, frame):
         cv2.circle(frame, (self._x1, self._y1), 3, (0, 0, 255))
         cv2.circle(frame, (self._x1, self._y1), 12, (0, 0, 255))
         cv2.circle(frame, (self._x2, self._y2), 3, (255, 0, 0))

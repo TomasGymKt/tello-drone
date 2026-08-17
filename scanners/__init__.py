@@ -5,6 +5,10 @@ import inspect
 import pkgutil
 from pathlib import Path
 
+from utils.Logger import logger
+from utils.color import C
+from utils.errors import ScanningError
+
 from .base import Scanner
 
 
@@ -39,7 +43,14 @@ def get_scanner(method: str) -> Scanner:
 
 
 def scan_with(method: str, frame):
-    return get_scanner(method).scan(frame)
+    try:
+        return get_scanner(method).scan(frame)
+    except ScanningError:
+        return None
+    except Exception as e:
+        logger.error(f"Unknown error while scanning with {method}:{C.FG_RED}", e)
+        print(C.RESET)
+        return None
 
 
 _load_scanners()

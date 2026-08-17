@@ -1,20 +1,31 @@
 from abc import ABC, abstractmethod
 import cv2
+from typing import TYPE_CHECKING
 
 from UI.elements import Container
-from utils.models import MouseData
+from utils.models import MouseData, ScanResult
 from utils.Logger import logger
 
+if TYPE_CHECKING:
+    from UI.windows.WindowController import WindowController
+    
 
 class Window(ABC):
-    def __init__(self, window_name: str):
+    def __init__(self, window_controller: WindowController, window_name: str, enabled_by_default=False):
         self.window_name = window_name
+        self._controller = window_controller
         
         self._mouse = MouseData()
         self._root: Container = Container()
         
-        self._enabled = False
+        self._enabled = enabled_by_default
         self._window_handle()
+        
+        self._setup()
+    
+    @property
+    def controller(self):
+        return self._controller
 
     def _window_handle(self):
         if self._enabled:
@@ -29,10 +40,10 @@ class Window(ABC):
     def set_enabled(self, enabled: bool):
         self._enabled = enabled
         self._window_handle()
-        logger.info(f"Opened {self.window_name}" if self._enabled else f"Closed {self.window_name}")
+        logger.debug(f"{"Opened" if self._enabled else "Closed"} window: {self.window_name}")
 
     @property
-    def enabled(self):
+    def is_enabled(self):
         return self._enabled
 
     @property
@@ -51,5 +62,9 @@ class Window(ABC):
     
     
     @abstractmethod
-    def render(self, frame=None):
+    def render(self, camera_frame, scan_result: ScanResult):
+        ...
+    
+    @abstractmethod
+    def _setup(self):
         ...

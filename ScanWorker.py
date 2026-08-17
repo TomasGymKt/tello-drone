@@ -2,13 +2,13 @@ import threading
 import time
 
 from utils.Logger import logger
-from utils.models import QR_Code, Scan_Result
+from utils.models import QR_Code, ScanResult
 from config import DEFAULT_SCAN_METHOD_ORDER
 from scanners import SCANNERS, scan_with
 
 
 
-def scan_for_qr_code(frame, scan_method_order = DEFAULT_SCAN_METHOD_ORDER) -> Scan_Result | None:
+def scan_for_qr_code(frame, scan_method_order = DEFAULT_SCAN_METHOD_ORDER) -> ScanResult:
     for scan_method in scan_method_order:
         qr_code = None
 
@@ -16,9 +16,9 @@ def scan_for_qr_code(frame, scan_method_order = DEFAULT_SCAN_METHOD_ORDER) -> Sc
             qr_code = scan_with(scan_method, frame)
         
         if qr_code is not None:
-            return Scan_Result(qr_code, scan_method)
+            return ScanResult(success=True,  qr_code=qr_code, scan_method=scan_method)
     
-    return None
+    return ScanResult(success=False)
 
 
 class ScanWorker:
@@ -28,9 +28,7 @@ class ScanWorker:
         self._lock = threading.Lock()
         self._condition = threading.Condition(self._lock)
         self._latest_frame = None
-        self._latest_result: Scan_Result | None = None
-        self._last_scan_ms: float | None = None
-        self._last_scan_finished_at: float | None = None
+        self._latest_result: ScanResult = ScanResult()
         self._is_running = True
 
         self._thread = threading.Thread(target=self._worker_loop, daemon=True)
@@ -41,9 +39,9 @@ class ScanWorker:
             self._latest_frame = frame.copy()
             self._condition.notify()
 
-    def get_latest_result(self) -> tuple[Scan_Result | None, float | None, float | None]:
+    def get_latest_result(self) -> ScanResult:
         with self._lock:
-            return (self._latest_result, self._last_scan_ms, self._last_scan_finished_at)
+            return self._latest_result
 
     def stop(self) -> None:
         with self._condition:
@@ -69,8 +67,10 @@ class ScanWorker:
             scan_finished_at = time.perf_counter()
             scan_ms = (scan_finished_at - scan_started_at) * 1000
 
+            result.last_scan_ms = scan_ms
+            result.last_scan_finished_at = scan_finished_at
+            
             with self._lock:
                 self._latest_result = result
-                self._last_scan_ms = scan_ms
-                self._last_scan_finished_at = scan_finished_at
+
 

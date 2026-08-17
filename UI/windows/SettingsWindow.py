@@ -1,18 +1,35 @@
 import cv2
 import numpy as np
+from typing import TYPE_CHECKING
 
 from UI.elements import Button, ButtonStyle, RadioGroup, Radio, RadioStyle, Text, Slider, Container
 from UI.windows.Window import Window
 from utils.Logger import logger
 from utils.common import is_window_open
-from utils.models import AlphaColor, Color
+from utils.models import AlphaColor, Color, ScanResult
+
+if TYPE_CHECKING:
+    from UI.windows.WindowController import WindowController
 
 class SettingsWindow(Window):
-    def __init__(self, window_name="Settings"):
-        super().__init__(window_name)
+    def __init__(self, window_controller: WindowController, window_name="Settings"):
+        super().__init__(window_controller, window_name)
         self._base_frame = np.full((600, 600, 3), 255, dtype=np.uint8)
     
-    def render(self):
+    def _setup(self):
+        # === UI variables ===
+        self._debug_button_state = False
+        
+        # === UI elements ===
+        self._debug_button = Button(7, 7, "---- debug render", self._debug_button_callback)
+        self._validation_button = Button(7, 33, "---- validation settings", self._validation_button_callback)
+        
+        # === Add elements to root ===
+        self._root.add(self._debug_button)
+        self._root.add(self._validation_button)
+        
+    
+    def render(self, camera_frame, scan_result: ScanResult):
         if not self._enabled:
             return
         
@@ -20,47 +37,43 @@ class SettingsWindow(Window):
             self.set_enabled(False)
             return
         
+        
         frame = self._base_frame.copy()
+        
+        self._debug_button_update()
+        self._validation_button_update()
+        
         self._root.render(frame)
         cv2.imshow(self.window_name, frame)
-
-
-def create_settings_open_close_button(settingsWindow: SettingsWindow, x: int, y: int) -> Button:
-    def callback():
-        settingsWindow.set_enabled(not settingsWindow.enabled)
-        
-    return Button(
-        x, y,
-        "Close Settings" if settingsWindow.enabled else "Open Settings",
-        callback,
-        ButtonStyle(background_color=(AlphaColor(84, 135, 25) if settingsWindow.enabled else AlphaColor(69, 53, 220)))
-    )
-
-
-
-settings = SettingsWindow()
-root = settings.root
-
-root.add(Button(7, 7, "Debug Render", lambda: root.set_debug_render(not root._show_debug_render), ButtonStyle(Color(0, 255, 0), AlphaColor(50, 50, 50))))
-root.add(Button(-7, -7, "Button", lambda: print("press2!"), ButtonStyle(Color(0, 255, 0), AlphaColor(50, 50, 50))))
-
-validatonContainer = Container()
-
-def preset_callback(value: str):
-    pass
     
-validatonContainer.add(Text(7, 44, "Validation preset:"))
-group = RadioGroup(preset_callback)
-group.add(Radio(7, 70, "Very strict", "verystrict"))
-group.add(Radio(7, 98, "Strict", "strict"))
-group.add(Radio(7, 126, "Balanced", "balanced"))
-group.add(Radio(7, 154, "Loose", "loose"))
-group.add(Radio(7, 182, "Very loose", "veryloose"))
+    
+    def _debug_button_update(self):
+        self._debug_button.set_text(
+            f"{"Hide" if self._debug_button_state else "Show"} debug renders",
+            ButtonStyle(
+                color=(Color(255, 255, 255) if self._debug_button_state else Color(0, 0, 0)),
+                background_color=(AlphaColor(55, 65, 65) if self._debug_button_state else AlphaColor(215, 211, 209))
+            )
+        )
+    
+    def _debug_button_callback(self):
+        self._debug_button_state = not self._debug_button_state
+        logger.debug(f"{"Showing" if self._debug_button_state else "Hid"} debug renders")
+        for window in self.controller.windows.values():
+            window._root.set_debug_render(self._debug_button_state)
+    
+    def _validation_button_update(self):
+        is_validation_settings_enabled = self.controller.windows["Validation Settings"].is_enabled
+        self._validation_button.set_text(
+            f"{"Close" if is_validation_settings_enabled else "Open"} validation settings",
+            ButtonStyle(
+                color=(Color(255, 255, 255) if is_validation_settings_enabled else Color(0, 0, 0)),
+                background_color=(AlphaColor(55, 65, 65) if is_validation_settings_enabled else AlphaColor(215, 211, 209))
+            )
+        ) 
+    
+    def _validation_button_callback(self):
+        validationSettingsWindow = self.controller.windows["Validation Settings"]
+        validationSettingsWindow.set_enabled(not validationSettingsWindow.is_enabled)
 
-validatonContainer.add(group)
-
-root.add(validatonContainer)
-
-slider = Slider(250, 500, 0.0, 10.0, 5.0, lambda value: print(value))
-root.add(slider)
 

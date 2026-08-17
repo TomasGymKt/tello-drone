@@ -9,6 +9,7 @@ from utils.models import Color, AlphaColor, MouseData, Padding
 class TextStyle:
     color: Color = Color(255, 255, 255)
     background_color: AlphaColor = AlphaColor(0, 0, 0, 0.5)
+    
     padding: Padding = Padding(5)
     fontSize: float = 0.6
     fontThickness: int = 1
@@ -48,6 +49,15 @@ class Text(Element):
 
         self._calculate_text_size()
         self._set_frame_size_on_render = True
+    
+    def set_position(self, x: int | None = None, y: int | None = None):
+        if x is not None:
+            self._original_x = x
+        if y is not None:
+            self._original_y = y
+        
+        self._set_frame_size_on_render = True
+
 
     def set_style(self, style: TextStyle):
         self._style = style
@@ -85,12 +95,12 @@ class Text(Element):
         cv2.putText(frame, self._text, (self._x1 + self._style.padding.left, self._y1 + self._text_height + self._style.padding.top), cv2.FONT_HERSHEY_SIMPLEX, self._style.fontSize, self._style.color, self._style.fontThickness)
         
         if self._show_debug_render:
-            self._degub_render(frame)
+            self._debug_render(frame)
     
     def set_debug_render(self, enabled: bool):
         self._show_debug_render = enabled
     
-    def _degub_render(self, frame):
+    def _debug_render(self, frame):
         cv2.circle(frame, (self._x1, self._y1), 3, (0, 0, 255))
         cv2.circle(frame, (self._x1, self._y1), 12, (0, 0, 255))
         cv2.circle(frame, (self._x2, self._y2), 3, (255, 0, 0))

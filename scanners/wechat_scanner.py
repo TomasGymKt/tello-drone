@@ -1,8 +1,7 @@
 import cv2
 import numpy as np
 import os
-from utils.models import Corners, Int_Vector2, QR_Code
-from utils.common import qr_size
+from utils.models import QR_Code
 from config import SCAN_WECHAT_METHOD
 from .base import Scanner as BaseScanner
 
@@ -40,30 +39,8 @@ def _try_detect(img, scale=1.0) -> QR_Code | None:
 
     pts = (points[0] / scale).astype(int)
 
-    corners = Corners(
-        Int_Vector2(*pts[0]),
-        Int_Vector2(*pts[1]),
-        Int_Vector2(*pts[2]),
-        Int_Vector2(*pts[3]),
-    )
-
-    center_x = int(pts[:, 0].mean())
-    center_y = int(pts[:, 1].mean())
-
-    size = qr_size(corners)
-
-    h, w = img.shape[:2]
-
-    return QR_Code(
-        points=corners,
-        text=texts[0] if len(texts) and texts[0] else None,
-        center_xy=(center_x, center_y),
-        size=size,
-        error_xy=(
-            center_x - int(w / scale) // 2,
-            center_y - int(h / scale) // 2
-        )
-    )
+    
+    return QR_Code(points=pts, text=texts[0] if len(texts) and texts[0] else None, frame=img)
 
 
 

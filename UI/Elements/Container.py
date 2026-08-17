@@ -51,7 +51,10 @@ class Container(Element):
             element.set_debug_render(enabled)
     
     def _debug_render(self, frame):
-        x1, y1, x2, y2 = get_elements_bounding_box(self._elements, include_nested=True)
+        box = get_elements_bounding_box(self._elements, include_nested=True)
+        if box is None:
+            return
+        x1, y1, x2, y2 = box
         cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 1)
         cv2.line(frame, (x1, y1), (x2, y2), (0, 0, 255), 1)
         cv2.line(frame, (x2, y1), (x1, y2), (0, 0, 255), 1)

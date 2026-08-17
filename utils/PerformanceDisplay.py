@@ -1,11 +1,11 @@
 import time
 
 from UI.elements import Container, Text, TextStyle
-from utils.models import Color
+from utils.models import Color, ScanResult
 
 
 class PerformanceDisplay:
-    def __init__(self, refresh_period=0.15, scan_fps_period=10.0, scan_time_period=10.0, draw_fps_period=10.0):
+    def __init__(self, refresh_period=0.2, scan_fps_period=10.0, scan_time_period=10.0, draw_fps_period=10.0):
         self.refresh_period = refresh_period
         self.scan_fps_period = scan_fps_period
         self.scan_time_period = scan_time_period
@@ -129,13 +129,14 @@ class PerformanceDisplay:
 
             self._last_refresh_at = current_time
 
-    def update(self, last_scan_finished_at: float | None, last_scan_ms: float | None):
+    def update(self, scan_result: ScanResult):
         current_time = time.perf_counter()
         
         self._update_draw_fps(current_time)
-        self._update_scan_fps(last_scan_finished_at)
-        self._update_minmax(current_time, last_scan_ms)
-        self._update_text(current_time, last_scan_ms)
+        
+        self._update_scan_fps(scan_result.last_scan_finished_at)
+        self._update_minmax(current_time, scan_result.last_scan_ms)
+        self._update_text(current_time, scan_result.last_scan_ms)
 
         self.scan_fps_Text .set_text(self._scan_fps_text )
         self.scan_time_Text.set_text(self._scan_time_text)
