@@ -12,8 +12,8 @@ from utils.models import AlphaColor, Color, Padding, MouseData
 @dataclass(slots=True)
 class RadioStyle:
     color: Color = Color(239, 239, 239)
-    selected_color: Color = Color(255, 117, 0)
-    background_color: AlphaColor = AlphaColor(0, 0, 0, 0.5)
+    selected_color: Color = Color(255, 192, 128)
+    background_color: AlphaColor = AlphaColor(0, 0, 0, 0.8)
     padding: Padding = Padding(5)
     radius: int = 8
     circle_thickness: int = 2
@@ -68,6 +68,14 @@ class Radio:
         self._style = style
 
         self._calculate_text_size()
+        self._set_frame_size_on_render = True
+    
+    def set_position(self, x: int | None = None, y: int | None = None):
+        if x is not None:
+            self._original_x = x
+        if y is not None:
+            self._original_y = y
+        
         self._set_frame_size_on_render = True
 
     def set_style(self, style: RadioStyle):

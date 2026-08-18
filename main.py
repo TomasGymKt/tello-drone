@@ -8,7 +8,7 @@ from utils.common import start_periodic_stats_log, check_wifi
 from utils.color import C
 from utils.models import SharedQR
 from utils.DebugFrames import debug_frames
-from utils.qr_validation import debug_is_plausible_qr_code, is_plausible_qr_code
+from utils.qr_validation import is_plausible_qr_code
 from UI.windows import window_controller
 from settings import settings
 from ScanWorker import ScanWorker
@@ -49,7 +49,7 @@ def main(tello: Tello):
             result = scan_worker.get_latest_result()
             
             # Rejected non-square-ish QR Codes
-            if result.success and not debug_is_plausible_qr_code(result.qr_code, settings.qr_code_validation_preset):
+            if result.success and not is_plausible_qr_code(result.qr_code):
                 result.success = False
             
             if result.success:

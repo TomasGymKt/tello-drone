@@ -23,13 +23,15 @@ class SettingsWindow(Window):
         # === UI elements ===
         self._debug_button = Button(7, 7, "---- debug render", self._debug_button_callback)
         self._validation_button = Button(7, 33, "---- validation settings", self._validation_button_callback)
+        self._camera_button = Button(7, 59, "---- camera settings", self._camera_button_callback)
         
         # === Add elements to root ===
         self._root.add(self._debug_button)
         self._root.add(self._validation_button)
+        self._root.add(self._camera_button)
         
     
-    def render(self, camera_frame, scan_result: ScanResult):
+    def _render(self, camera_frame, scan_result: ScanResult):
         if not self._enabled:
             return
         
@@ -42,6 +44,7 @@ class SettingsWindow(Window):
         
         self._debug_button_update()
         self._validation_button_update()
+        self._camera_button_update()
         
         self._root.render(frame)
         cv2.imshow(self.window_name, frame)
@@ -75,5 +78,19 @@ class SettingsWindow(Window):
     def _validation_button_callback(self):
         validationSettingsWindow = self.controller.windows["Validation Settings"]
         validationSettingsWindow.set_enabled(not validationSettingsWindow.is_enabled)
+        
+    def _camera_button_update(self):
+        is_camera_settings_enabled = self.controller.windows["Camera Settings"].is_enabled
+        self._camera_button.set_text(
+            f"{"Close" if is_camera_settings_enabled else "Open"} camera settings",
+            ButtonStyle(
+                color=(Color(255, 255, 255) if is_camera_settings_enabled else Color(0, 0, 0)),
+                background_color=(AlphaColor(55, 65, 65) if is_camera_settings_enabled else AlphaColor(215, 211, 209))
+            )
+        ) 
+    
+    def _camera_button_callback(self):
+        cameraSettingsWindow = self.controller.windows["Camera Settings"]
+        cameraSettingsWindow.set_enabled(not cameraSettingsWindow.is_enabled)
 
 

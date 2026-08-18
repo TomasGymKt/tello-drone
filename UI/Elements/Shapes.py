@@ -5,7 +5,7 @@ from UI.elements.Element import Element
 from utils.models import Color, AlphaColor, Int_Vector2, MouseData
 
 class Line(Element):
-    def __init__(self, x1: int, y1: int, x2: int, y2: int, color: Color | AlphaColor, thickness: int = -1):
+    def __init__(self, x1: int, y1: int, x2: int, y2: int, color: Color | AlphaColor, thickness: int = 1):
         self._x1 = x1
         self._x2 = x2
         self._y1 = y1

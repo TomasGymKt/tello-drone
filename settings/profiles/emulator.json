@@ -1,0 +1,12 @@
+{
+  "debug": true,
+  "is_emulator": true,
+  "qr_code_size_cm": 10.0,
+  "camera_focal_length": 1250.0,
+  "scan_method_order": [
+    "cv2"
+  ],
+  "draw_ghost_qr_code": true,
+  "draw_rejected_qr_codes": true,
+  "validation_preset": "balanced"
+}

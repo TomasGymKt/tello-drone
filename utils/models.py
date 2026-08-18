@@ -1,6 +1,6 @@
 import math
 import threading
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from typing import NamedTuple
 from enum import StrEnum
 from settings import settings
@@ -156,22 +156,6 @@ class MouseData:
     event: int = -1
 
 
-class ValidationPresets(StrEnum):
-    """
-    Presets:
-    - **verystrict**: old balanced behavior; square-ish only
-    - **strict**: mild perspective/skew tolerance
-    - **balanced**: allows noticeably skewed but still plausible quads
-    - **loose**: for extreme viewing angles with higher false-positive risk
-    - **veryloose**: maximum tolerance before shape checking becomes weak
-    """
-    
-    VERY_STRICT = "verystrict"
-    STRICT = "strict"
-    BALANCED = "balanced"
-    LOOSE = "loose"
-    VERY_LOOSE = "veryloose"
-
 @dataclass(slots=True)
 class ValidationPreset:
     """
@@ -185,7 +169,6 @@ class ValidationPreset:
     - **min_corner_dot**: corner right-angle tolerance using normalized dot product; lower is stricter
     """
     
-    # name: ValidationPlausiblePresets
     min_side_px: float
     max_side_px: float
     max_top_bottom_side_ratio: float
@@ -194,20 +177,7 @@ class ValidationPreset:
     max_diagonal_ratio: float
     min_corner_dot: float
     
-    def __repr__(self):
-        min_side_px = self.min_side_px
-        max_side_px = self.max_side_px
-        max_top_bottom_side_ratio = self.max_top_bottom_side_ratio
-        max_left_right_side_ratio = self.max_left_right_side_ratio
-        max_diagonal_ratio = self.max_diagonal_ratio
-        min_corner_dot = self.min_corner_dot
-        return (
-            "ValidationPreset(\n"
-            f"    {min_side_px=:.1f}\n"
-            f"    {max_side_px=:.0f}\n"
-            f"    {max_top_bottom_side_ratio=:.2f}\n"
-            f"    {max_left_right_side_ratio=:.2f}\n"
-            f"    {max_diagonal_ratio=:.2f}\n"
-            f"    {min_corner_dot=:.2f}\n"
-            ")"
-        )
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+    

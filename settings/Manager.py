@@ -14,17 +14,22 @@ class SettingsManager:
         self._profiles_path = Path(__file__).parent / "profiles"
         self._profiles_path.mkdir(exist_ok=True)
 
-        self._default_profile_path = self._profiles_path / "default.json"
+        self._shared_path = Path(__file__).parent / "shared.json"
 
-        self._create_default_profile()
+        self._create_shared()
+        self._load_shared()
         self.load_default_profile()
 
     @property
     def settings(self) -> Settings:
         return self._settings
 
+    # ==================== Settings ====================
+
     def reset_to_factory_defaults(self):
         self._settings = Settings()
+
+    # ==================== Profiles ====================
 
     def save_profile(self, name: str):
         self._validate_profile_name(name)
@@ -56,9 +61,6 @@ class SettingsManager:
     def delete_profile(self, name: str):
         self._validate_profile_name(name)
 
-        if name == "default":
-            raise ValueError("The default profile cannot be deleted")
-
         path = self._get_profile_path(name)
 
         if not path.exists():
@@ -66,15 +68,12 @@ class SettingsManager:
 
         path.unlink()
 
-        if self._get_default_profile() == name:
-            self._set_default_profile(None)
+        if self.get_default_profile() == name:
+            self.set_default_profile(None)
 
     def rename_profile(self, old_name: str, new_name: str):
         self._validate_profile_name(old_name)
         self._validate_profile_name(new_name)
-
-        if old_name == "default" or new_name == "default":
-            raise ValueError("The profile name 'default' is reserved")
 
         old_path = self._get_profile_path(old_name)
         new_path = self._get_profile_path(new_name)
@@ -87,31 +86,8 @@ class SettingsManager:
 
         old_path.rename(new_path)
 
-        if self._get_default_profile() == old_name:
-            self._set_default_profile(new_name)
-
-    def set_default_profile(self, name: str | None):
-        if name is not None:
-            self._validate_profile_name(name)
-
-            if not self.profile_exists(name):
-                raise FileNotFoundError(f"Profile '{name}' does not exist")
-
-        self._set_default_profile(name)
-
-    def load_default_profile(self):
-        name = self._get_default_profile()
-
-        if name is None:
-            self.reset_to_factory_defaults()
-            return
-
-        if not self.profile_exists(name):
-            self.reset_to_factory_defaults()
-            self._set_default_profile(None)
-            return
-
-        self.load_profile(name)
+        if self.get_default_profile() == old_name:
+            self.set_default_profile(new_name)
 
     def profile_exists(self, name: str) -> bool:
         self._validate_profile_name(name)
@@ -121,27 +97,81 @@ class SettingsManager:
         return sorted(
             path.stem
             for path in self._profiles_path.glob("*.json")
-            if path.name != "default.json"
         )
 
-    def get_default_profile(self) -> str | None:
-        return self._get_default_profile()
+    # ==================== Default profile ====================
 
-    def _create_default_profile(self):
-        if self._default_profile_path.exists():
+    def set_default_profile(self, name: str | None):
+        if name is not None:
+            self._validate_profile_name(name)
+
+            if not self.profile_exists(name):
+                raise FileNotFoundError(f"Profile '{name}' does not exist")
+
+        self._set_shared("default_profile", name)
+
+    def get_default_profile(self) -> str | None:
+        return self._shared["default_profile"]
+
+    def load_default_profile(self):
+        name = self.get_default_profile()
+
+        if name is None:
+            self.reset_to_factory_defaults()
             return
 
-        self._set_default_profile(None)
+        if not self.profile_exists(name):
+            self.reset_to_factory_defaults()
+            self.set_default_profile(None)
+            return
 
-    def _get_default_profile(self) -> str | None:
-        with self._default_profile_path.open("r", encoding="utf-8") as file:
-            data = json.load(file)
+        self.load_profile(name)
 
-        return data.get("default")
+    # ==================== Shared ====================
 
-    def _set_default_profile(self, name: str | None):
-        with self._default_profile_path.open("w", encoding="utf-8") as file:
-            json.dump({"default": name}, file, indent=2)
+    def get_shared(self, key: str):
+        return self._shared[key]
+
+    def set_shared(self, key: str, value):
+        self._shared[key] = value
+        self._save_shared()
+
+    def delete_shared(self, key: str):
+        if key == "default_profile":
+            raise ValueError("The default_profile key cannot be deleted")
+
+        del self._shared[key]
+        self._save_shared()
+
+    def shared_exists(self, key: str) -> bool:
+        return key in self._shared
+
+    # ==================== Shared internals ====================
+
+    def _create_shared(self):
+        if self._shared_path.exists():
+            return
+
+        with self._shared_path.open("w", encoding="utf-8") as file:
+            json.dump({"default_profile": None}, file, indent=2)
+
+    def _load_shared(self):
+        with self._shared_path.open("r", encoding="utf-8") as file:
+            self._shared = json.load(file)
+
+        if "default_profile" not in self._shared:
+            self._shared["default_profile"] = None
+            self._save_shared()
+
+    def _set_shared(self, key: str, value):
+        self._shared[key] = value
+        self._save_shared()
+
+    def _save_shared(self):
+        with self._shared_path.open("w", encoding="utf-8") as file:
+            json.dump(self._shared, file, indent=2, ensure_ascii=False)
+
+    # ==================== Helpers ====================
 
     def _get_profile_path(self, name: str) -> Path:
         return self._profiles_path / f"{name}.json"

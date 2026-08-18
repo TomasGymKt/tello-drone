@@ -3,6 +3,7 @@ import cv2
 from typing import TYPE_CHECKING
 
 from UI.elements import Container
+from utils.common import is_window_open
 from utils.models import MouseData, ScanResult
 from utils.Logger import logger
 
@@ -19,6 +20,7 @@ class Window(ABC):
         self._root: Container = Container()
         
         self._enabled = enabled_by_default
+        self._keep_enabled = False
         self._window_handle()
         
         self._setup()
@@ -61,8 +63,21 @@ class Window(ABC):
         self._root.handle_mouse(self._mouse)
     
     
-    @abstractmethod
     def render(self, camera_frame, scan_result: ScanResult):
+        if not self._enabled:
+            return
+        
+        if not is_window_open(self.window_name):
+            if self._keep_enabled:
+                self._window_handle()
+                return
+            self.set_enabled(False)
+            return
+        
+        self._render(camera_frame, scan_result)
+    
+    @abstractmethod
+    def _render(self, camera_frame, scan_result: ScanResult):
         ...
     
     @abstractmethod

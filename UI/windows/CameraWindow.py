@@ -8,7 +8,6 @@ from settings import settings
 from utils.PerformanceDisplay import PerformanceDisplay
 from utils.common import is_window_open
 from utils.models import Color, AlphaColor, ScanResult
-from utils.qr_validation import debug_is_plausible_qr_code
 
 if TYPE_CHECKING:
     from UI.windows.WindowController import WindowController
@@ -17,6 +16,7 @@ if TYPE_CHECKING:
 class CameraWindow(Window):
     def __init__(self, window_controller: WindowController, window_name="Camera"):
         super().__init__(window_controller, window_name, enabled_by_default=True)
+        self._keep_enabled = True
 
     def _setup(self):
         # === UI variables ===
@@ -38,7 +38,7 @@ class CameraWindow(Window):
         # self._root.add(self._ghost_qr_ploter)
         self._rejected_setup()
     
-    def render(self, camera_frame, scan_result: ScanResult):
+    def _render(self, camera_frame, scan_result: ScanResult):
         if not self._enabled:
             return
         if not is_window_open(self.window_name):

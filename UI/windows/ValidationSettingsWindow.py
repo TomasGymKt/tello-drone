@@ -5,25 +5,28 @@ import math
 import cv2
 import numpy as np
 
-from UI.elements import Text, TextStyle, Slider, SliderStyle, Button, ButtonStyle
+from UI.elements import Text, TextStyle, Slider, SliderStyle, Button, ButtonStyle, RadioGroup, Radio, RadioStyle, Container
 from UI.windows.Window import Window
 from utils.common import is_window_open
 from utils.models import AlphaColor, Color, QR_Code, ValidationPreset
 from utils.Logger import logger
-
-from utils.qr_validation import PRESETS
+from settings import settings, shared
 
 
 class ValidationSettingsWindow(Window):
     def __init__(self, window_controller, window_name="Validation Settings"):
-        super().__init__(window_controller, window_name, enabled_by_default=True)
+        super().__init__(window_controller, window_name)
         self._base_frame = np.full((500, 685, 3), 255, dtype=np.uint8)
     
     def _setup(self):
         # === UI variables ===
+        self._preset_name = settings.validation_preset
+        self._all_presets = shared.get_validation_presets()
 
         
         # === UI elements ===
+        self._preset_text = Text(188, 7, "Preset: -----", TextStyle(Color(255, 92, 255), AlphaColor(0, 0, 0, 0.8)))
+        
         self._min_side_text            = Text(7, 35 , "Shortest side: --- px")
         self._max_side_text            = Text(7, 61 , "Longest side: --- px")
         self._top_bottom_ratio_text    = Text(7, 87 , "Top/Bottom ratio: -.---")
@@ -45,19 +48,24 @@ class ValidationSettingsWindow(Window):
         self._limit_diagonal_ratio_text      = Text(320, 165, "> -.--")
         self._limit_corner_dot_text          = Text(320, 230, "> -.--")
         
-        self._limit_min_side_slider            = Slider(420, 44 , 20.0, 100.0, 50.0, lambda _: None, SliderStyle(width=250))
-        self._limit_max_side_slider            = Slider(420, 70 , 300.0, 650.0, 500.0, lambda _: None, SliderStyle(width=250))
-        self._limit_top_bottom_ratio_slider    = Slider(420, 96 , 0.5, 3.0, 1.5, lambda _: None, SliderStyle(width=250))
-        self._limit_left_right_ratio_slider    = Slider(420, 122, 0.5, 3.0, 1.5, lambda _: None, SliderStyle(width=250))
-        self._limit_adjacent_side_ratio_slider = Slider(420, 148, 0.5, 3.0, 1.5, lambda _: None, SliderStyle(width=250))
-        self._limit_diagonal_ratio_slider      = Slider(420, 174, 0.5, 3.0, 1.5, lambda _: None, SliderStyle(width=250))
-        self._limit_corner_dot_slider          = Slider(420, 239, 0.0, 1.5, 0.8, lambda _: None, SliderStyle(width=250))
+        self._sliders_container = Container()
+        self._sliders_container.enabled = self._preset_name == "custom"
         
-        self._print_button = Button(7, 321, "Print set", self._print_button_callback)
+        self._limit_min_side_slider            = Slider(420, 44 , 20.0 , 100.0, self._all_presets["custom"].min_side_px              , self._sliders_callback, SliderStyle(width=250))
+        self._limit_max_side_slider            = Slider(420, 70 , 300.0, 650.0, self._all_presets["custom"].max_side_px              , self._sliders_callback, SliderStyle(width=250))
+        self._limit_top_bottom_ratio_slider    = Slider(420, 96 , 0.5  , 3.0  , self._all_presets["custom"].max_top_bottom_side_ratio, self._sliders_callback, SliderStyle(width=250))
+        self._limit_left_right_ratio_slider    = Slider(420, 122, 0.5  , 3.0  , self._all_presets["custom"].max_left_right_side_ratio, self._sliders_callback, SliderStyle(width=250))
+        self._limit_adjacent_side_ratio_slider = Slider(420, 148, 0.5  , 3.0  , self._all_presets["custom"].max_adjacent_side_ratio  , self._sliders_callback, SliderStyle(width=250))
+        self._limit_diagonal_ratio_slider      = Slider(420, 174, 0.5  , 3.0  , self._all_presets["custom"].max_diagonal_ratio       , self._sliders_callback, SliderStyle(width=250))
+        self._limit_corner_dot_slider          = Slider(420, 239, 0.0  , 1.5  , self._all_presets["custom"].min_corner_dot           , self._sliders_callback, SliderStyle(width=250))
+        
+        self._picker_radio = RadioGroup(self._picker_radio_callback)
+        self._picker_radio_setup()
 
         
         # === Add elements to root ===
         self._root.add(Text(7, 7, "Current values:", TextStyle(Color(255, 176, 0), AlphaColor(0, 0, 0, 0.8), fontSize=0.7, fontThickness=2)))
+        self._root.add(self._preset_text)
         self._root.add(self._min_side_text)
         self._root.add(self._max_side_text)
         self._root.add(self._top_bottom_ratio_text)
@@ -75,18 +83,19 @@ class ValidationSettingsWindow(Window):
         self._root.add(self._limit_diagonal_ratio_text)
         self._root.add(self._limit_corner_dot_text)
         
-        self._root.add(self._limit_min_side_slider)
-        self._root.add(self._limit_max_side_slider)
-        self._root.add(self._limit_top_bottom_ratio_slider)
-        self._root.add(self._limit_left_right_ratio_slider)
-        self._root.add(self._limit_adjacent_side_ratio_slider)
-        self._root.add(self._limit_diagonal_ratio_slider)
-        self._root.add(self._limit_corner_dot_slider)
+        self._sliders_container.add(self._limit_min_side_slider)
+        self._sliders_container.add(self._limit_max_side_slider)
+        self._sliders_container.add(self._limit_top_bottom_ratio_slider)
+        self._sliders_container.add(self._limit_left_right_ratio_slider)
+        self._sliders_container.add(self._limit_adjacent_side_ratio_slider)
+        self._sliders_container.add(self._limit_diagonal_ratio_slider)
+        self._sliders_container.add(self._limit_corner_dot_slider)
+        self._root.add(self._sliders_container)
         
-        self._root.add(self._print_button)
+        self._root.add(self._picker_radio)
         
     
-    def render(self, camera_frame, scan_result):
+    def _render(self, camera_frame, scan_result):
         if not self._enabled:
             return
         
@@ -97,10 +106,14 @@ class ValidationSettingsWindow(Window):
         
         frame = self._base_frame.copy()
         
+        self._preset_name = settings.validation_preset
+        
         if scan_result.qr_code is not None:
             self._current_values_update(scan_result.qr_code)
         
-        self._limit_texts_uptade()
+        self._preset_text.set_text(f"Preset: {self._preset_name}")
+        self._limit_texts_update()
+        self._sliders_update()
         
         self._root.render(frame)
         cv2.imshow(self.window_name, frame)
@@ -148,73 +161,115 @@ class ValidationSettingsWindow(Window):
                 dot = abs(first[0] * second[0] + first[1] * second[1]) / (first_length * second_length)
                 dot_values[index] = dot
         
+        preset = self._all_presets[self._preset_name]
         
         self._min_side_text.set_text(
             f"Shortest side: {shortest_side:.3f} px",
-            TextStyle(color=(Color(0, 255, 0) if shortest_side > self._limit_min_side_slider.value else Color(0, 0, 255)))
+            TextStyle(color=(Color(0, 255, 0) if shortest_side > preset.min_side_px else Color(0, 0, 255)))
         )
         self._max_side_text.set_text(
             f"Longest side: {longest_side:.3f} px",
-            TextStyle(color=(Color(0, 255, 0) if longest_side < self._limit_max_side_slider.value else Color(0, 0, 255)))
+            TextStyle(color=(Color(0, 255, 0) if longest_side < preset.max_side_px else Color(0, 0, 255)))
         )
         self._top_bottom_ratio_text.set_text(
             f"Top/Bottom ratio: {top_bottom_ratio:.3f}",
-            TextStyle(color=(Color(0, 255, 0) if top_bottom_ratio < self._limit_top_bottom_ratio_slider.value else Color(0, 0, 255)))
+            TextStyle(color=(Color(0, 255, 0) if top_bottom_ratio < preset.max_top_bottom_side_ratio else Color(0, 0, 255)))
         )
         self._left_right_ratio_text.set_text(
             f"Left/Right ratio: {left_right_ratio:.3f}",
-            TextStyle(color=(Color(0, 255, 0) if left_right_ratio < self._limit_left_right_ratio_slider.value else Color(0, 0, 255)))
+            TextStyle(color=(Color(0, 255, 0) if left_right_ratio < preset.max_left_right_side_ratio else Color(0, 0, 255)))
         )
         self._adjacent_side_ratio_text.set_text(
             f"Adjancet side ratio: {adjacent_ratio:.3f}",
-            TextStyle(color=(Color(0, 255, 0) if adjacent_ratio < self._limit_adjacent_side_ratio_slider.value else Color(0, 0, 255)))
+            TextStyle(color=(Color(0, 255, 0) if adjacent_ratio < preset.max_adjacent_side_ratio else Color(0, 0, 255)))
         )
         self._diagonal_ratio_text.set_text(
             f"Diagonal ratio: {diagonal_ratio:.3f}",
-            TextStyle(color=(Color(0, 255, 0) if diagonal_ratio < self._limit_diagonal_ratio_slider.value else Color(0, 0, 255)))
+            TextStyle(color=(Color(0, 255, 0) if diagonal_ratio < preset.max_diagonal_ratio else Color(0, 0, 255)))
         )
         for index, text in enumerate(self._corner_dot_texts):
             dot = dot_values[index]
             text.set_text(
                 f"Corner dot {index}: {"None" if dot is None else f"{dot:.3f}"}",
-                TextStyle(color=(Color(0, 255, 0) if dot is not None and dot < self._limit_corner_dot_slider.value else Color(0, 0, 255)))
+                TextStyle(color=(Color(0, 255, 0) if dot is not None and dot < preset.min_corner_dot else Color(0, 0, 255)))
             )
     
-    def _limit_texts_uptade(self):
+    def _limit_texts_update(self):
+        preset = self._all_presets[self._preset_name]
+        
         self._limit_min_side_text.set_text(
-            f"> {self._limit_min_side_slider.value:.1f}"
+            f"> {preset.min_side_px:.1f}"
         )
         self._limit_max_side_text.set_text(
-            f"< {self._limit_max_side_slider.value:.0f}"
+            f"< {preset.max_side_px:.0f}"
         )
         self._limit_top_bottom_ratio_text.set_text(
-            f"< {self._limit_top_bottom_ratio_slider.value:.2f}"
+            f"< {preset.max_top_bottom_side_ratio:.2f}"
         )
         self._limit_left_right_ratio_text.set_text(
-            f"< {self._limit_left_right_ratio_slider.value:.2f}"
+            f"< {preset.max_left_right_side_ratio:.2f}"
         )
         self._limit_adjacent_side_ratio_text.set_text(
-            f"< {self._limit_adjacent_side_ratio_slider.value:.2f}"
+            f"< {preset.max_adjacent_side_ratio:.2f}"
         )
         self._limit_diagonal_ratio_text.set_text(
-            f"< {self._limit_diagonal_ratio_slider.value:.2f}"
+            f"< {preset.max_diagonal_ratio:.2f}"
         )
         self._limit_corner_dot_text.set_text(
-            f"< {self._limit_corner_dot_slider.value:.2f}"
+            f"< {preset.min_corner_dot:.2f}"
         )
-        
-        # TODO: We need a settings manager to change stuff across files the right way
-        # We don't have a way to make the validation code use the 'custom' preset
-        # Nor can we get the current preset it's using
-        PRESETS["custom"].min_side_px = self._limit_min_side_slider.value
-        PRESETS["custom"].max_side_px = self._limit_max_side_slider.value
-        PRESETS["custom"].max_top_bottom_side_ratio = self._limit_top_bottom_ratio_slider.value
-        PRESETS["custom"].max_left_right_side_ratio = self._limit_left_right_ratio_slider.value
-        PRESETS["custom"].max_adjacent_side_ratio = self._limit_adjacent_side_ratio_slider.value
-        PRESETS["custom"].max_diagonal_ratio = self._limit_diagonal_ratio_slider.value
-        PRESETS["custom"].min_corner_dot = self._limit_corner_dot_slider.value
     
-    def _print_button_callback(self):
-        # TODO: We need a settings manager to change stuff across files the right way
-        # And to be able to permanetly store changes
-        logger.info("Printing set:", PRESETS["custom"])
+    def _sliders_update(self):
+        enabled = self._preset_name == "custom"
+        self._sliders_container.enabled = enabled
+        
+        for slider in self._sliders_container.elements:
+            slider.set_style(
+                SliderStyle(Color(255, 117, 0), handle_color=Color(255, 117, 0), width=250) 
+                if enabled else 
+                SliderStyle(Color(239, 239, 239), handle_color=Color(200, 200, 200), width=250)
+            )
+        
+        preset = self._all_presets[self._preset_name]
+        self._limit_min_side_slider.set_value(preset.min_side_px)
+        self._limit_max_side_slider.set_value(preset.max_side_px)
+        self._limit_top_bottom_ratio_slider.set_value(preset.max_top_bottom_side_ratio)
+        self._limit_left_right_ratio_slider.set_value(preset.max_left_right_side_ratio)
+        self._limit_adjacent_side_ratio_slider.set_value(preset.max_adjacent_side_ratio)
+        self._limit_diagonal_ratio_slider.set_value(preset.max_diagonal_ratio)
+        self._limit_corner_dot_slider.set_value(preset.min_corner_dot)
+    
+    def _sliders_callback(self, value: float):
+        if self._preset_name != "custom":
+            return
+        new_preset = ValidationPreset(
+            min_side_px=round(self._limit_min_side_slider.value, 1),
+            max_side_px=round(self._limit_max_side_slider.value),
+            max_top_bottom_side_ratio=round(self._limit_top_bottom_ratio_slider.value, 3),
+            max_left_right_side_ratio=round(self._limit_left_right_ratio_slider.value, 3),
+            max_adjacent_side_ratio=round(self._limit_adjacent_side_ratio_slider.value, 3),
+            max_diagonal_ratio=round(self._limit_diagonal_ratio_slider.value, 3),
+            min_corner_dot=round(self._limit_corner_dot_slider.value, 3),
+        )
+        shared.save_validation_preset("custom", new_preset)
+        self._all_presets = shared.get_validation_presets()
+    
+    def _picker_radio_setup(self, start_x: int=7, start_y: int=330, end_x: int=685, gap: int=5):
+        x = start_x
+        y = start_y
+        for preset_name in self._all_presets.keys():
+            radio = Radio(0, 0, preset_name, preset_name)
+            width = radio._text_width + radio._style.radius*2 + radio._style.circle_text_gap + radio._style.padding.horizontal + 1
+            if x + width > end_x:
+                x = start_x
+                y += max(radio._style.radius * 2, radio._text_height) + radio._style.padding.vertical + 1 + gap
+            radio.set_position(x, y)
+            x += width + gap
+            
+            if preset_name == self._preset_name:
+                self._picker_radio.select(radio)
+            self._picker_radio.add(radio)
+    
+    def _picker_radio_callback(self, value: object):
+        settings.validation_preset = value
+

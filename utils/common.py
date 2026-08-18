@@ -6,15 +6,13 @@ import cv2
 from djitellopy import Tello
 import threading
 import time
-import math
 from typing import TYPE_CHECKING
 from utils.Logger import logger
-from utils.models import Corners, MouseData
 from utils.errors import ConnectionError
 from utils.color import C, colorful_battery, colorful_temperature
-from settings import settings
 
 if TYPE_CHECKING:
+    from utils.models import MouseData
     from UI.elements.Element import Element
 
 
@@ -55,6 +53,7 @@ def get_wifi_connection() -> str | None:
     return ssids[0].split(" ")[0]
 
 def check_wifi():
+    from settings import settings
     if settings.is_emulator:
         logger.info("Skipping wifi check, because of emulator")
         return

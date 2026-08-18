@@ -21,7 +21,7 @@ class Settings:
     # ===== Scanning =====
 
     qr_code_size_cm: float = 10.0
-    calibration_value: float = 9000.0
+    camera_focal_length: float = 900.0 # = (qr code size in px) * (physical distance in cm) / (physical qr code size in cm)
 
     scan_method_order: list[str] = field(default_factory=lambda: [
         ScanMethod.CV2,
@@ -29,7 +29,7 @@ class Settings:
 
     draw_ghost_qr_code: bool = True
     draw_rejected_qr_codes: bool = True
-    qr_code_validation_preset: str = "balanced"
+    validation_preset: str = "balanced"
 
     @property
     def ip_address(self) -> str:
@@ -38,8 +38,7 @@ class Settings:
         return TELLO_IP
     
     @property
-    def camera_focal_length(self) -> float:
-        """Returns camera focal length in pixels"""
-        return self.calibration_value / self.qr_code_size_cm
+    def calibration_value(self) -> float:
+        return self.camera_focal_length * self.qr_code_size_cm
     
 
