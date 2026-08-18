@@ -3,7 +3,7 @@ import threading
 from dataclasses import dataclass
 from typing import NamedTuple
 from enum import StrEnum
-from config import CAMERA_FOCAL_LENGTH_PX, QR_CODE_SIZE_CM, SCAN_ZXING_METHOD, SCAN_CV2_METHOD, SCAN_WECHAT_METHOD, SCAN_CONTOURS_METHOD
+from settings import settings
 
 def qr_size(points: Corners) -> float:
     top = math.dist(points.top_left, points.top_right)
@@ -25,13 +25,6 @@ class Corners(NamedTuple):
     bottom_left: Int_Vector2
 
 
-class SCAN_METHOD(StrEnum):
-    ZXING = SCAN_ZXING_METHOD
-    CV2 = SCAN_CV2_METHOD
-    WECHAT = SCAN_WECHAT_METHOD
-    CONTOURS = SCAN_CONTOURS_METHOD
-
-
 class QR_Code:
     def __init__(self, points, text: str | None, frame):
         self.points = Corners(
@@ -44,7 +37,7 @@ class QR_Code:
         self.center_x = int(points[:, 0].mean())
         self.center_y = int(points[:, 1].mean())
         self.size = qr_size(self.points)
-        self.distance_cm = (QR_CODE_SIZE_CM * CAMERA_FOCAL_LENGTH_PX) / self.size
+        self.distance_cm = settings.calibration_value / self.size
         self.error_x = self.center_x - frame.shape[1] // 2
         self.error_y = self.center_y - frame.shape[0] // 2
 
@@ -163,7 +156,7 @@ class MouseData:
     event: int = -1
 
 
-class ValidationPlausiblePresets(StrEnum):
+class ValidationPresets(StrEnum):
     """
     Presets:
     - **verystrict**: old balanced behavior; square-ish only
@@ -180,7 +173,7 @@ class ValidationPlausiblePresets(StrEnum):
     VERY_LOOSE = "veryloose"
 
 @dataclass(slots=True)
-class ValidationPlausiblePreset:
+class ValidationPreset:
     """
     Parameter meaning:
     - **min_side_px**: shortest side must be at least this long; higher is stricter
@@ -209,7 +202,7 @@ class ValidationPlausiblePreset:
         max_diagonal_ratio = self.max_diagonal_ratio
         min_corner_dot = self.min_corner_dot
         return (
-            "ValidationPlausiblePreset(\n"
+            "ValidationPreset(\n"
             f"    {min_side_px=:.1f}\n"
             f"    {max_side_px=:.0f}\n"
             f"    {max_top_bottom_side_ratio=:.2f}\n"

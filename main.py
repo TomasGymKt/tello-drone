@@ -2,7 +2,6 @@ from djitellopy import Tello, TelloException
 import cv2
 import time
 
-from config import IP_ADDRES, IS_DEBUG, IS_EMULATOR
 from utils.Logger import logger
 from utils.errors import ConnectionError
 from utils.common import start_periodic_stats_log, check_wifi
@@ -10,7 +9,8 @@ from utils.color import C
 from utils.models import SharedQR
 from utils.DebugFrames import debug_frames
 from utils.qr_validation import debug_is_plausible_qr_code, is_plausible_qr_code
-from UI.windows.WindowController import WindowController
+from UI.windows import window_controller
+from settings import settings
 from ScanWorker import ScanWorker
 from fly import start_flying_thread
 
@@ -38,8 +38,6 @@ def main(tello: Tello):
     
 
     time.sleep(1)
-    
-    windowController = WindowController()
 
     logger.info(f"{C.BOLD}Initialization complete{C.RESET}")
     try:
@@ -51,7 +49,7 @@ def main(tello: Tello):
             result = scan_worker.get_latest_result()
             
             # Rejected non-square-ish QR Codes
-            if result.success and not debug_is_plausible_qr_code(result.qr_code):
+            if result.success and not debug_is_plausible_qr_code(result.qr_code, settings.qr_code_validation_preset):
                 result.success = False
             
             if result.success:
@@ -59,7 +57,7 @@ def main(tello: Tello):
             else:
                 shared_qr.set(None)
             
-            windowController.render(frame, result)
+            window_controller.render(frame, result)
             
             # Draw windows from DebugFrames, useful in other threads since cv2 doesn't render windows in other threads
             for window_name, debug_frame in debug_frames.get_all().items():
@@ -88,12 +86,12 @@ def handle_program_exit(tello: Tello):
 
 if __name__ == "__main__":
     logger.success(f"{C.BOLD}Starting program...{C.RESET}")
-    if IS_DEBUG:
+    if settings.debug:
         logger.info(f"{C.FG_YELLOW}Running in {C.BOLD}DEBUG MODE{C.RESET}{C.FG_YELLOW}!{C.RESET}")
-    if IS_EMULATOR:
+    if settings.is_emulator:
         logger.info(f"{C.FG_YELLOW}Running on {C.BOLD}EMULATOR{C.RESET}{C.FG_YELLOW}!{C.RESET}")
 
-    tello = Tello(host=IP_ADDRES)
+    tello = Tello(host=settings.ip_address)
 
     try:
         main(tello)
@@ -106,7 +104,7 @@ if __name__ == "__main__":
         logger.fatal(f"{C.FG_BRIGHT_RED}Faild to connect{C.RESET} to Tello\n{err.msg}")
     
     except Exception as e:
-        if IS_DEBUG:
+        if settings.debug:
             raise e
         logger.error("Unknow error:", e)
     

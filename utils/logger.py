@@ -2,7 +2,6 @@ from enum import Enum
 from datetime import datetime
 from os import get_terminal_size
 from textwrap import wrap
-from config import SHOULD_RIGHT_ALIGN_LOGS
 import re
 
 ANSI_ESCAPE_RE = re.compile(
@@ -148,4 +147,4 @@ class Logger:
     self._write(LogLevel.FATAL, message, meta)
 
 
-logger = Logger(LogLevel.TEST, not SHOULD_RIGHT_ALIGN_LOGS)
+logger = Logger(LogLevel.TEST)

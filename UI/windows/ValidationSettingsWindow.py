@@ -8,7 +8,7 @@ import numpy as np
 from UI.elements import Text, TextStyle, Slider, SliderStyle, Button, ButtonStyle
 from UI.windows.Window import Window
 from utils.common import is_window_open
-from utils.models import AlphaColor, Color, QR_Code, ValidationPlausiblePreset
+from utils.models import AlphaColor, Color, QR_Code, ValidationPreset
 from utils.Logger import logger
 
 from utils.qr_validation import PRESETS

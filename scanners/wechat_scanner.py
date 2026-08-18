@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import os
 from utils.models import QR_Code
-from config import SCAN_WECHAT_METHOD
+from settings import ScanMethod
 from .base import Scanner as BaseScanner
 
 
@@ -93,7 +93,7 @@ def wechat_QR_scan(frame) -> QR_Code | None:
 
 
 class Scanner(BaseScanner):
-    method = SCAN_WECHAT_METHOD
+    method = ScanMethod.WECHAT
 
     def scan(self, frame) -> QR_Code | None:
         return wechat_QR_scan(frame)

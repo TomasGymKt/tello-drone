@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import zxingcpp
 from utils.models import Corners, Int_Vector2, QR_Code
-from config import SCAN_ZXING_METHOD
+from settings import ScanMethod
 from .base import Scanner as BaseScanner
 
 
@@ -34,7 +34,7 @@ def zxing_QR_scan(frame, scale: int=1) -> QR_Code | None:
 
 
 class Scanner(BaseScanner):
-    method = SCAN_ZXING_METHOD
+    method = ScanMethod.ZXING
 
     def scan(self, frame) -> QR_Code | None:
         return zxing_QR_scan(frame)

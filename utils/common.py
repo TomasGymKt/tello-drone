@@ -12,7 +12,7 @@ from utils.Logger import logger
 from utils.models import Corners, MouseData
 from utils.errors import ConnectionError
 from utils.color import C, colorful_battery, colorful_temperature
-from config import IS_EMULATOR
+from settings import settings
 
 if TYPE_CHECKING:
     from UI.elements.Element import Element
@@ -55,7 +55,7 @@ def get_wifi_connection() -> str | None:
     return ssids[0].split(" ")[0]
 
 def check_wifi():
-    if IS_EMULATOR:
+    if settings.is_emulator:
         logger.info("Skipping wifi check, because of emulator")
         return
     

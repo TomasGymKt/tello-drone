@@ -1,7 +1,7 @@
 import cv2
 from utils.models import QR_Code
 from utils.color import generate_colors
-from config import SCAN_CONTOURS_METHOD
+from settings import ScanMethod
 from .base import Scanner as BaseScanner
 from utils.DebugFrames import debug_frames
 
@@ -89,7 +89,7 @@ def get_contours(frame) -> QR_Code | None:
 
 
 class Scanner(BaseScanner):
-    method = SCAN_CONTOURS_METHOD
+    method = ScanMethod.CONTOURS
 
     def scan(self, frame) -> QR_Code | None:
         return get_contours(frame)

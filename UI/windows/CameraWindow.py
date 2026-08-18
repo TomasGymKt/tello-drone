@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 from UI.elements import Container, Text, TextStyle, CenterCross, QRCodePloter, Button, Outline, ButtonStyle
 from UI.windows.Window import Window
-from config import DRAW_GHOST_QR_CODE, DRAW_REJECTED_QR_CODES
+from settings import settings
 from utils.PerformanceDisplay import PerformanceDisplay
 from utils.common import is_window_open
 from utils.models import Color, AlphaColor, ScanResult
@@ -46,7 +46,7 @@ class CameraWindow(Window):
         
         frame = camera_frame.copy()
         
-        # if DRAW_GHOST_QR_CODE and self._last_found_result is not None:
+        # if settings.draw_ghost_qr_code and self._last_found_result is not None:
         #     opacity = 0.4-(time.perf_counter()-self._last_found_result.last_scan_finished_at)*1.5
         #     if opacity > 0:
         #         self._ghost_qr_ploter.set_scan_result(self._last_found_result)
@@ -78,7 +78,7 @@ class CameraWindow(Window):
             self._root.add(self._rejected_outlines[i])
     
     def _rejected_update(self, scan_result: ScanResult, start_opacity: float = 0.4, fading_mult: float = 1.2):
-        if DRAW_REJECTED_QR_CODES and not scan_result.success and scan_result.qr_code is not None:
+        if settings.draw_rejected_qr_codes and not scan_result.success and scan_result.qr_code is not None:
             outline = self._rejected_outlines[self._rejected_index]
             self._rejected_times[self._rejected_index] = time.perf_counter()
             self._rejected_index = (self._rejected_index + 1) % self._rejected_amount

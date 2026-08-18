@@ -3,7 +3,7 @@ from utils.errors import ScanningError
 from utils.models import QR_Code
 from utils.Logger import logger
 from utils.color import C
-from config import SCAN_CV2_METHOD
+from settings import ScanMethod
 from .base import Scanner as BaseScanner
 
 
@@ -37,7 +37,7 @@ def cv2_QR_scan(frame, try_decode=True) -> QR_Code | None:
 
 
 class Scanner(BaseScanner):
-    method = SCAN_CV2_METHOD
+    method = ScanMethod.CV2
 
     def scan(self, frame) -> QR_Code | None:
         return cv2_QR_scan(frame, try_decode=True)

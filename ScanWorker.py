@@ -1,14 +1,13 @@
 import threading
 import time
 
-from utils.Logger import logger
-from utils.models import QR_Code, ScanResult
-from config import DEFAULT_SCAN_METHOD_ORDER
+from utils.models import ScanResult
+from settings import settings
 from scanners import SCANNERS, scan_with
 
 
 
-def scan_for_qr_code(frame, scan_method_order = DEFAULT_SCAN_METHOD_ORDER) -> ScanResult:
+def scan_for_qr_code(frame, scan_method_order: list[str]) -> ScanResult:
     for scan_method in scan_method_order:
         qr_code = None
 
@@ -22,7 +21,7 @@ def scan_for_qr_code(frame, scan_method_order = DEFAULT_SCAN_METHOD_ORDER) -> Sc
 
 
 class ScanWorker:
-    def __init__(self, scan_method_order=DEFAULT_SCAN_METHOD_ORDER):
+    def __init__(self, scan_method_order=settings.scan_method_order):
         self.scan_method_order = list(scan_method_order)
 
         self._lock = threading.Lock()

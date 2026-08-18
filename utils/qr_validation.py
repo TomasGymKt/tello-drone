@@ -1,14 +1,13 @@
 import math
 from typing import Literal
 from utils.common import timer
-from utils.models import Color, QR_Code, ValidationPlausiblePreset, ValidationPlausiblePresets
+from utils.models import Color, QR_Code, ValidationPreset, ValidationPresets
 from UI.elements.Text import Text, TextStyle
-from config import QR_CODE_VALIDATION_DEFAULT_PLAUSIBLE_PRESET
 
 from utils.DebugFrames import debug_frames, create_blank_frame
 
-PRESETS: dict[ValidationPlausiblePresets, ValidationPlausiblePreset] = {
-    ValidationPlausiblePresets.VERY_STRICT: ValidationPlausiblePreset(
+PRESETS: dict[ValidationPresets, ValidationPreset] = {
+    ValidationPresets.VERY_STRICT: ValidationPreset(
         min_side_px=40.0,
         max_side_px=500.0,
         max_top_bottom_side_ratio=1.30,
@@ -17,7 +16,7 @@ PRESETS: dict[ValidationPlausiblePresets, ValidationPlausiblePreset] = {
         max_diagonal_ratio=1.30,
         min_corner_dot=0.35
     ),
-    ValidationPlausiblePresets.STRICT: ValidationPlausiblePreset( # Restraints at the most extreme angles closer to the camera (from my simple testing)
+    ValidationPresets.STRICT: ValidationPreset( # Restraints at the most extreme angles closer to the camera (from my simple testing)
         min_side_px=35.0,
         max_side_px=550.0,
         max_top_bottom_side_ratio=1.45,
@@ -26,7 +25,7 @@ PRESETS: dict[ValidationPlausiblePresets, ValidationPlausiblePreset] = {
         max_diagonal_ratio=1.45,
         min_corner_dot=0.48
     ),
-    ValidationPlausiblePresets.BALANCED: ValidationPlausiblePreset( # Works for every angle and distance cv2 can scan (from my simple testing)
+    ValidationPresets.BALANCED: ValidationPreset( # Works for every angle and distance cv2 can scan (from my simple testing)
         min_side_px=30.0,
         max_side_px=600.0,
         max_top_bottom_side_ratio=1.70,
@@ -35,7 +34,7 @@ PRESETS: dict[ValidationPlausiblePresets, ValidationPlausiblePreset] = {
         max_diagonal_ratio=1.70,
         min_corner_dot=0.60
     ),
-    ValidationPlausiblePresets.LOOSE: ValidationPlausiblePreset( # Unnecessarily loose, since balanced detectes everything cv2 can detect
+    ValidationPresets.LOOSE: ValidationPreset( # Unnecessarily loose, since balanced detectes everything cv2 can detect
         min_side_px=20.0,
         max_side_px=630.0,
         max_top_bottom_side_ratio=1.95,
@@ -44,7 +43,7 @@ PRESETS: dict[ValidationPlausiblePresets, ValidationPlausiblePreset] = {
         max_diagonal_ratio=1.95,
         min_corner_dot=0.72
     ),
-    ValidationPlausiblePresets.VERY_LOOSE: ValidationPlausiblePreset(
+    ValidationPresets.VERY_LOOSE: ValidationPreset(
         min_side_px=20.0,
         max_side_px=630.0,
         max_top_bottom_side_ratio=2.25,
@@ -53,7 +52,7 @@ PRESETS: dict[ValidationPlausiblePresets, ValidationPlausiblePreset] = {
         max_diagonal_ratio=2.25,
         min_corner_dot=0.82
     ),
-    "custom": ValidationPlausiblePreset(
+    "custom": ValidationPreset(
         min_side_px=-1.0,
         max_side_px=-1.0,
         max_top_bottom_side_ratio=-1.0,
@@ -67,7 +66,7 @@ PRESETS: dict[ValidationPlausiblePresets, ValidationPlausiblePreset] = {
 
 def is_plausible_qr_code(
     qr_code: QR_Code,
-    preset: ValidationPlausiblePresets = QR_CODE_VALIDATION_DEFAULT_PLAUSIBLE_PRESET,
+    preset: ValidationPresets,
 ) -> bool:
     """
     Extremely fast (<0.05 ms (on my hardware)) shape filter for rejecting detections that clearly do not look like a QR code.
@@ -143,7 +142,7 @@ def is_plausible_qr_code(
 
 def debug_is_plausible_qr_code(
     qr_code: QR_Code,
-    preset: ValidationPlausiblePresets = QR_CODE_VALIDATION_DEFAULT_PLAUSIBLE_PRESET,
+    preset: ValidationPresets,
 ) -> bool:
     """
     Extremely fast (<0.05 ms (on my hardware)) shape filter for rejecting detections that clearly do not look like a QR code.
