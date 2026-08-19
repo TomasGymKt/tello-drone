@@ -227,7 +227,7 @@ class ValidationSettingsWindow(Window):
             slider.set_style(
                 SliderStyle(Color(255, 117, 0), handle_color=Color(255, 117, 0), width=250) 
                 if enabled else 
-                SliderStyle(Color(239, 239, 239), handle_color=Color(200, 200, 200), width=250)
+                SliderStyle(Color(200, 200, 200), handle_color=Color(200, 200, 200), width=250)
             )
         
         preset = self._all_presets[self._preset_name]

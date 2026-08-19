@@ -8,6 +8,7 @@ from settings import settings
 from utils.PerformanceDisplay import PerformanceDisplay
 from utils.common import is_window_open
 from utils.models import Color, AlphaColor, ScanResult
+from utils.Logger import logger
 
 if TYPE_CHECKING:
     from UI.windows.WindowController import WindowController
@@ -20,14 +21,15 @@ class CameraWindow(Window):
 
     def _setup(self):
         # === UI variables ===
-        self._last_found_result: ScanResult = ScanResult()
+        self._last_found_result: ScanResult = ScanResult(last_scan_finished_at=0)
+        self._ghost_result: ScanResult | None = None
         
         # === UI elements ===
         self._qr_ploter = QRCodePloter()
         self._performance_display = PerformanceDisplay()
         self._found_text = Text(-7, 7, f"----------", TextStyle(Color(0, 0, 255)))
         self._settings_button = Button(-7, -7, "---- settings", self._settings_button_callback)
-        # self._ghost_qr_ploter = QRCodePloter()
+        self._ghost_qr_ploter = QRCodePloter()
         
         # === Add elements to root ===
         self._root.add(self._qr_ploter)
@@ -35,7 +37,7 @@ class CameraWindow(Window):
         self._root.add(self._found_text)
         self._root.add(self._settings_button)
         self._root.add(CenterCross())
-        # self._root.add(self._ghost_qr_ploter)
+        self._root.add(self._ghost_qr_ploter)
         self._rejected_setup()
     
     def _render(self, camera_frame, scan_result: ScanResult):
@@ -45,12 +47,8 @@ class CameraWindow(Window):
             self._window_handle()
         
         frame = camera_frame.copy()
-        
-        # if settings.draw_ghost_qr_code and self._last_found_result is not None:
-        #     opacity = 0.4-(time.perf_counter()-self._last_found_result.last_scan_finished_at)*1.5
-        #     if opacity > 0:
-        #         self._ghost_qr_ploter.set_scan_result(self._last_found_result)
-        
+    
+        self._ghost_update(scan_result)    
         self._rejected_update(scan_result)
         
         self._qr_ploter.set_scan_result(scan_result)
@@ -68,6 +66,25 @@ class CameraWindow(Window):
         cv2.imshow(self.window_name, frame)
     
     
+    def _ghost_update(self, scan_result: ScanResult, start_opacity: float = 0.7, fading_mult: float = 1.5):
+        if not settings.draw_ghost_qr_code:
+            return
+        
+        if scan_result.success:
+            self._ghost_qr_ploter.visible = False
+            return
+        
+        self._ghost_result = self._last_found_result
+        self._ghost_qr_ploter.set_scan_result(self._ghost_result)
+        
+        if self._ghost_result is not None:
+            opacity = start_opacity-(time.perf_counter()-self._ghost_result.last_scan_finished_at)*fading_mult
+            self._ghost_qr_ploter.visible = True
+            self._ghost_qr_ploter.opacity = opacity
+            if opacity < 0:
+                self._ghost_qr_ploter.visible = False
+                self._ghost_result = None
+
     def _rejected_setup(self, max_amount: int = 3):
         self._rejected_amount = max_amount
         self._rejected_outlines = [Outline(AlphaColor(0, 0, 255, 0.4), 1) for _ in range(max_amount)]
@@ -78,7 +95,10 @@ class CameraWindow(Window):
             self._root.add(self._rejected_outlines[i])
     
     def _rejected_update(self, scan_result: ScanResult, start_opacity: float = 0.4, fading_mult: float = 1.2):
-        if settings.draw_rejected_qr_codes and not scan_result.success and scan_result.qr_code is not None:
+        if not settings.draw_rejected_qr_codes:
+            return
+        
+        if not scan_result.success and scan_result.qr_code is not None:
             outline = self._rejected_outlines[self._rejected_index]
             self._rejected_times[self._rejected_index] = time.perf_counter()
             self._rejected_index = (self._rejected_index + 1) % self._rejected_amount

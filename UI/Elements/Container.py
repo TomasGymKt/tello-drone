@@ -10,6 +10,7 @@ class Container(Element):
         self._elements: list[Element] = []
         self.visible = True
         self.enabled = True
+        self.opacity = 1.0
         
         self._show_debug_render = False
 
@@ -38,9 +39,15 @@ class Container(Element):
     def render(self, frame):
         if not self.visible:
             return
-
-        for element in self._elements:
-            element.render(frame)
+        
+        if self.opacity == 1.0:
+            for element in self._elements:
+                element.render(frame)
+        else:
+            overlay = frame.copy()
+            for element in self._elements:
+                element.render(overlay)
+            cv2.addWeighted(overlay, self.opacity, frame, 1 - self.opacity, 0, frame)
         
         if self._show_debug_render:
             self._debug_render(frame)
