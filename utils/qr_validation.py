@@ -1,6 +1,7 @@
 import math
+import time
 
-from utils.models import QR_Code
+from utils.models import QR_Code, QRTrack
 from settings import settings, shared
 
 
@@ -71,4 +72,116 @@ def is_plausible_qr_code(qr_code: QR_Code) -> bool:
     return True
 
 
+class LongTermValidator:
+    def __init__(self):
+        self._tracks: list[QRTrack] = []
+    
+    @property
+    def tracks(self):
+        return sorted(self._tracks, key=lambda track: (not track.validated, -track.last_seen_at))
 
+    def validate(self, qr_code: QR_Code) -> bool:
+
+        current_time = time.perf_counter()
+
+        track = self._find_track(qr_code)
+
+        if track is None:
+            self._tracks.append(self._create_track(qr_code, current_time))
+            return False
+
+        track.center_x = qr_code.center_x
+        track.center_y = qr_code.center_y
+        track.radius = self._calc_radius(qr_code.size)
+        track.last_seen_at = current_time
+        track.appearances += 1
+
+        if track.validated:
+            self._remove_overlapping_invalid_tracks(track)
+            return True
+
+        if current_time - track.first_seen_at >= settings.long_term_validation_settings.period:
+            if track.appearances >= settings.long_term_validation_settings.min_appearance:
+                track.validated = True
+                self._remove_overlapping_invalid_tracks(track)
+                return True
+
+            self._tracks.remove(track)
+
+        return False
+
+    def update(self):
+        self._cleanup(time.perf_counter())
+
+    def _find_track(self, qr_code: QR_Code) -> QRTrack | None:
+        matching_tracks: list[QRTrack] = []
+
+        for track in self._tracks:
+            distance = math.hypot(
+                qr_code.center_x - track.center_x,
+                qr_code.center_y - track.center_y,
+            )
+
+            if distance <= track.radius:
+                matching_tracks.append(track)
+
+        if not matching_tracks:
+            return None
+
+        return min(
+            matching_tracks,
+            key=lambda track: (
+                not track.validated,
+                math.hypot(
+                    qr_code.center_x - track.center_x,
+                    qr_code.center_y - track.center_y,
+                ),
+            ),
+        )
+
+    def _create_track(self, qr_code: QR_Code, current_time: float) -> QRTrack:
+        return QRTrack(
+            center_x=qr_code.center_x,
+            center_y=qr_code.center_y,
+            radius=self._calc_radius(qr_code.size),
+            first_seen_at=current_time,
+            last_seen_at=current_time,
+            appearances=1,
+        )
+
+    def _cleanup(self, current_time: float):
+        self._tracks = [
+            track
+            for track in self._tracks
+            if (
+                track.validated
+                and current_time - track.last_seen_at <= settings.long_term_validation_settings.max_gap_time
+            )
+            or (
+                not track.validated
+                and current_time - track.first_seen_at < settings.long_term_validation_settings.period
+            )
+        ]
+
+    def _remove_overlapping_invalid_tracks(self, valid_track: QRTrack):
+        self._tracks = [
+            track
+            for track in self._tracks
+            if track is valid_track
+            or track.validated
+            or not self._tracks_overlap(track, valid_track)
+        ]
+
+    def _tracks_overlap(self, first: QRTrack, second: QRTrack) -> bool:
+        distance = math.hypot(
+            first.center_x - second.center_x,
+            first.center_y - second.center_y,
+        )
+
+        return distance <= first.radius + second.radius
+
+    def _calc_radius(self, size: float):
+        # return settings.calibration_value / distance_cm / 2 * settings.long_term_validation_settings.dist_mult; same as:
+        return size / 2 * settings.long_term_validation_settings.dist_mult
+
+longTermValidator = LongTermValidator()

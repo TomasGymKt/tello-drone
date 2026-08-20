@@ -8,7 +8,7 @@ from utils.common import start_periodic_stats_log, check_wifi
 from utils.color import C
 from utils.models import SharedQR
 from utils.DebugFrames import debug_frames
-from utils.qr_validation import is_plausible_qr_code
+from utils.qr_validation import is_plausible_qr_code, longTermValidator
 from UI.windows import window_controller
 from settings import settings
 from ScanWorker import ScanWorker
@@ -53,9 +53,12 @@ def main(tello: Tello):
                 result.success = False
             
             if result.success:
-                shared_qr.set(result.qr_code)
-            else:
-                shared_qr.set(None)
+                success = longTermValidator.validate(result.qr_code)
+                result.success = success
+                result.in_validation = not success
+            longTermValidator.update()
+            
+            shared_qr.set(result.qr_code if result.success else None)
             
             window_controller.render(frame, result)
             

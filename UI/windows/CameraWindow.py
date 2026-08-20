@@ -2,13 +2,14 @@ import time
 import cv2
 from typing import TYPE_CHECKING
 
-from UI.elements import Container, Text, TextStyle, CenterCross, QRCodePloter, Button, Outline, ButtonStyle
+from UI.elements import Container, Text, TextStyle, CenterCross, QRCodePloter, Button, Outline, ButtonStyle, Circle
 from UI.windows.Window import Window
 from settings import settings
 from utils.PerformanceDisplay import PerformanceDisplay
 from utils.common import is_window_open
 from utils.models import Color, AlphaColor, ScanResult
 from utils.Logger import logger
+from utils.qr_validation import longTermValidator
 
 if TYPE_CHECKING:
     from UI.windows.WindowController import WindowController
@@ -39,6 +40,7 @@ class CameraWindow(Window):
         self._root.add(CenterCross())
         self._root.add(self._ghost_qr_ploter)
         self._rejected_setup()
+        self._validating_setup()
     
     def _render(self, camera_frame, scan_result: ScanResult):
         if not self._enabled:
@@ -48,8 +50,9 @@ class CameraWindow(Window):
         
         frame = camera_frame.copy()
     
-        self._ghost_update(scan_result)    
+        self._ghost_update(scan_result)
         self._rejected_update(scan_result)
+        self._validating_update(scan_result)
         
         self._qr_ploter.set_scan_result(scan_result)
         
@@ -91,14 +94,14 @@ class CameraWindow(Window):
         self._rejected_times = [-1 for _ in range(max_amount)]
         self._rejected_index = 0
         
-        for i in range(self._rejected_amount):
+        for i in range(max_amount):
             self._root.add(self._rejected_outlines[i])
     
     def _rejected_update(self, scan_result: ScanResult, start_opacity: float = 0.4, fading_mult: float = 1.2):
         if not settings.draw_rejected_qr_codes:
             return
         
-        if not scan_result.success and scan_result.qr_code is not None:
+        if not scan_result.success and not scan_result.in_validation and scan_result.qr_code is not None:
             outline = self._rejected_outlines[self._rejected_index]
             self._rejected_times[self._rejected_index] = time.perf_counter()
             self._rejected_index = (self._rejected_index + 1) % self._rejected_amount
@@ -111,6 +114,44 @@ class CameraWindow(Window):
             self._rejected_outlines[i].set_style(AlphaColor(0, 0, 255, opacity))
             if opacity < 0:
                 self._rejected_outlines[i].visible = False
+    
+    def _validating_setup(self, max_amount: int = 3):
+        self._validating_amount = max_amount
+        self._validating_circles = [Circle(0, 0, 0, AlphaColor(0, 255, 255, 0.6)) for _ in range(max_amount)]
+        self._validating_outline = Outline(AlphaColor(0, 255, 255, 0.4))
+        
+        for i in range(max_amount):
+            self._root.add(self._validating_circles[i])
+            self._root.add(self._validating_outline)
+    
+    def _validating_update(self, scan_result: ScanResult):
+        if scan_result.in_validation:
+            self._validating_outline.visible = True
+            self._validating_outline.set_points(scan_result.qr_code.points)
+        else:
+            self._validating_outline.visible = False
+        
+        tracks = longTermValidator.tracks
+        for circle in self._validating_circles:
+            circle.visible = False
+            
+        for i in range(self._validating_amount):
+            if i >= len(tracks):
+                return
+            track = tracks[i]
+            circle = self._validating_circles[i]
+            
+            circle.visible = True
+            circle.set_position(track.center_x, track.center_y, int(track.radius))
+            circle.set_style(
+                AlphaColor(0, 255, 0, 0.2)
+                if track.validated else
+                (
+                    AlphaColor(0, 255, 255, 0.1)
+                    if track.appearances >= settings.long_term_validation_settings.min_appearance else
+                    AlphaColor(0, 0, 255, 0.05)
+                )
+            )
     
     def _settings_button_update(self):
         is_settings_enabled = self.controller.windows["Settings"].is_enabled

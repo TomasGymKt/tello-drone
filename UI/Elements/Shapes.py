@@ -13,6 +13,8 @@ class Line(Element):
         self._color = color
         self._thickness = thickness
         
+        self.visible = True
+        
         self._show_debug_render = False
     
     def set_style(self, color: Color | AlphaColor | None = None, thickness: int | None = None):
@@ -35,6 +37,9 @@ class Line(Element):
         pass
     
     def render(self, frame):
+        if not self.visible:
+            return
+        
         opacity = 1.0
         if isinstance(self._color, AlphaColor):
             opacity = self._color.alpha
@@ -69,6 +74,8 @@ class Rectangle(Element):
         self._color = color
         self._thickness = thickness
         
+        self.visible = True
+        
         self._show_debug_render = False
     
     def set_style(self, color: Color | AlphaColor | None = None, thickness: int | None = None):
@@ -81,6 +88,9 @@ class Rectangle(Element):
         pass
     
     def render(self, frame):
+        if not self.visible:
+            return
+        
         opacity = 1.0
         if isinstance(self._color, AlphaColor):
             opacity = self._color.alpha
@@ -113,6 +123,8 @@ class Circle(Element):
         
         self._color = color
         self._thickness = thickness
+        
+        self.visible = True
 
         self._show_debug_render = False
     
@@ -134,6 +146,9 @@ class Circle(Element):
         pass
     
     def render(self, frame):
+        if not self.visible:
+            return
+        
         opacity = 1.0
         if isinstance(self._color, AlphaColor):
             opacity = self._color.alpha
@@ -168,6 +183,8 @@ class CenterCross(Element):
         self._center_x = -1
         self._center_y = -1
         
+        self.visible = True
+        
         self._set_frame_size_on_render = True
         self._show_debug_render = False
     
@@ -186,6 +203,9 @@ class CenterCross(Element):
         pass
     
     def render(self, frame):
+        if not self.visible:
+            return
+        
         if self._set_frame_size_on_render:
             self._set_frame_size_on_render = False
             self.set_new_frame_size(frame)

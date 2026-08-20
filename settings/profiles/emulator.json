@@ -8,5 +8,11 @@
   ],
   "draw_ghost_qr_code": true,
   "draw_rejected_qr_codes": true,
-  "validation_preset": "balanced"
+  "validation_preset": "balanced",
+  "long_term_validation_settings": {
+    "period": 0.2,
+    "max_gap_time": 2,
+    "min_appearance": 2,
+    "dist_mult": 0.5
+  }
 }

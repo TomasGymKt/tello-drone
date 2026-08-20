@@ -11,12 +11,22 @@ class ScanMethod(StrEnum):
     CONTOURS = "contours"
     WECHAT = "wechat"
 
+@dataclass
+class LongTermValidationSettings:
+    period: float = 0.2 # Minimum time before a QR code can be valid
+    # keep in mind that a QR code has to be scaned min_appearance times in the period, so for an example:
+    #   period=0.2, min_appearance=2
+    #   = 1 scaned QR code per 100 ms => scanner has to be running at 10 FPS or more
+    max_gap_time: float = 2 # Maximum time a zone stays active after it's QR code disappears
+    min_appearance: int = 2 # Minimum amount of times a QR code has to appear in the same zone, for it to be valid
+    dist_mult: float = 0.5 # Radius multiplier of the zone; 1.0 = half QR code size
+
 @dataclass(slots=True)
 class Settings:
     # ===== General =====
 
     debug: bool = True
-    is_emulator: bool = True
+    is_emulator: bool = False
 
     # ===== Scanning =====
 
@@ -30,6 +40,7 @@ class Settings:
     draw_ghost_qr_code: bool = True
     draw_rejected_qr_codes: bool = True
     validation_preset: str = "balanced"
+    long_term_validation_settings: LongTermValidationSettings = field(default_factory=lambda: LongTermValidationSettings())
 
     @property
     def ip_address(self) -> str:

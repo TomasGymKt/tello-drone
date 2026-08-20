@@ -58,6 +58,7 @@ class SharedQR:
 @dataclass(slots=True)
 class ScanResult():
     success: bool = False
+    in_validation: bool = False
     qr_code: QR_Code | None = None
     scan_method: str | None = None
     last_scan_ms: float | None = None
@@ -180,4 +181,16 @@ class ValidationPreset:
     def to_dict(self) -> dict:
         return asdict(self)
 
+
+@dataclass(slots=True)
+class QRTrack:
+    center_x: float
+    center_y: float
+    radius: float
+
+    first_seen_at: float
+    last_seen_at: float
+
+    appearances: int
+    validated: bool = False
     

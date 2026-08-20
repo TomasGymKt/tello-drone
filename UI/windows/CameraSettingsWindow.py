@@ -35,7 +35,6 @@ class CameraSettingsWindow(Window):
         self._root.add(self._focal_slider)
         self._root.add(self._focal_value_text)
         
-        self._root.add(Line(7, 63, 593, 63, Color(200, 200, 200)))
         
         self._root.add(self._qr_label_text)
         self._root.add(self._qr_slider)

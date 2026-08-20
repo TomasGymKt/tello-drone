@@ -1,22 +1,23 @@
-
-
 import math
-
 import cv2
 import numpy as np
+from typing import TYPE_CHECKING
 
-from UI.elements import Text, TextStyle, Slider, SliderStyle, Button, ButtonStyle, RadioGroup, Radio, RadioStyle, Container
+from UI.elements import Text, TextStyle, Slider, SliderStyle, Button, ButtonStyle, RadioGroup, Radio, RadioStyle, Container, Line
 from UI.windows.Window import Window
 from utils.common import is_window_open
 from utils.models import AlphaColor, Color, QR_Code, ValidationPreset
 from utils.Logger import logger
 from settings import settings, shared
 
+if TYPE_CHECKING:
+    from UI.windows.WindowController import WindowController
+
 
 class ValidationSettingsWindow(Window):
-    def __init__(self, window_controller, window_name="Validation Settings"):
+    def __init__(self, window_controller: WindowController, window_name="Validation Settings"):
         super().__init__(window_controller, window_name)
-        self._base_frame = np.full((500, 685, 3), 255, dtype=np.uint8)
+        self._base_frame = np.full((650, 685, 3), 255, dtype=np.uint8)
     
     def _setup(self):
         # === UI variables ===
@@ -61,6 +62,20 @@ class ValidationSettingsWindow(Window):
         
         self._picker_radio = RadioGroup(self._picker_radio_callback)
         self._picker_radio_setup()
+        
+        self._period_label_text = Text(7, 402, "Period:")
+        self._period_slider = Slider(13, 436, 0, 5, settings.long_term_validation_settings.period, self._period_callback, SliderStyle(width=500))
+        self._period_value_text = Text(525, 428, "--.--")
+        self._appearance_label_text = Text(7, 465, "Minimum appearance:")
+        self._appearance_slider = Slider(13, 499, 0, 10, settings.long_term_validation_settings.min_appearance, self._appearance_callback, SliderStyle(width=500))
+        self._appearance_value_text = Text(525, 491, "-")
+        self._gap_time_label_text = Text(7, 528, "Max gap time:")
+        self._gap_time_slider = Slider(13, 562, 0, 10, settings.long_term_validation_settings.max_gap_time, self._gap_time_callback, SliderStyle(width=500))
+        self._gap_time_value_text = Text(525, 554, "--")
+        self._dist_mult_label_text = Text(7, 591, "Distance multiplier:")
+        self._dist_mult_slider = Slider(13, 625, 0, 10, settings.long_term_validation_settings.dist_mult, self._dist_mult_callback, SliderStyle(width=500))
+        self._dist_mult_value_text = Text(525, 617, "--")
+        
 
         
         # === Add elements to root ===
@@ -94,6 +109,21 @@ class ValidationSettingsWindow(Window):
         
         self._root.add(self._picker_radio)
         
+        self._root.add(Line(7, 395, 678, 395, Color(200, 200, 200)))
+        
+        self._root.add(self._period_label_text)
+        self._root.add(self._period_slider)
+        self._root.add(self._period_value_text)
+        self._root.add(self._appearance_label_text)
+        self._root.add(self._appearance_slider)
+        self._root.add(self._appearance_value_text)
+        self._root.add(self._gap_time_label_text)
+        self._root.add(self._gap_time_slider)
+        self._root.add(self._gap_time_value_text)
+        self._root.add(self._dist_mult_label_text)
+        self._root.add(self._dist_mult_slider)
+        self._root.add(self._dist_mult_value_text)
+        
     
     def _render(self, camera_frame, scan_result):
         if not self._enabled:
@@ -114,6 +144,11 @@ class ValidationSettingsWindow(Window):
         self._preset_text.set_text(f"Preset: {self._preset_name}")
         self._limit_texts_update()
         self._sliders_update()
+        
+        self._period_value_text.set_text(f"{settings.long_term_validation_settings.period:.2f}")
+        self._appearance_value_text.set_text(f"{settings.long_term_validation_settings.min_appearance:.0f}")
+        self._gap_time_value_text.set_text(f"{settings.long_term_validation_settings.max_gap_time:.2f}")
+        self._dist_mult_value_text.set_text(f"{settings.long_term_validation_settings.dist_mult:.2f}")
         
         self._root.render(frame)
         cv2.imshow(self.window_name, frame)
@@ -272,4 +307,16 @@ class ValidationSettingsWindow(Window):
     
     def _picker_radio_callback(self, value: object):
         settings.validation_preset = value
+
+    def _period_callback(self, value: float):
+        settings.long_term_validation_settings.period = round(value, 2)
+    
+    def _appearance_callback(self, value: float):
+        settings.long_term_validation_settings.min_appearance = round(value, 0)
+
+    def _gap_time_callback(self, value: float):
+        settings.long_term_validation_settings.max_gap_time = round(value, 2)
+
+    def _dist_mult_callback(self, value: float):
+        settings.long_term_validation_settings.dist_mult = round(value, 2)
 

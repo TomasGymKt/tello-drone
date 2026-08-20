@@ -4,7 +4,7 @@ import re
 from dataclasses import asdict
 from pathlib import Path
 
-from settings.Settings import Settings, ScanMethod
+from settings.Settings import Settings, ScanMethod, LongTermValidationSettings
 
 
 class SettingsManager:
@@ -55,6 +55,9 @@ class SettingsManager:
                 ScanMethod(method)
                 for method in data["scan_method_order"]
             ]
+        
+        if "long_term_validation_settings" in data:
+            data["long_term_validation_settings"] = LongTermValidationSettings(**data["long_term_validation_settings"])
 
         self._settings = Settings(**data)
 
