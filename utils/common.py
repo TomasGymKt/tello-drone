@@ -7,6 +7,8 @@ from djitellopy import Tello
 import threading
 import time
 from typing import TYPE_CHECKING
+
+import numpy as np
 from utils.Logger import logger
 from utils.errors import ConnectionError
 from utils.color import C, colorful_battery, colorful_temperature
@@ -17,6 +19,11 @@ if TYPE_CHECKING:
 
 
 def _log_stats(tello: Tello, period: int):
+    """
+    internal function, you don't normally call this
+    logs the current battery percentage and min, max temperature in a colorful format
+    """
+    
     while True:
         logger.info(
             "Battery: {}        Temps: {}, {}"
@@ -29,12 +36,20 @@ def _log_stats(tello: Tello, period: int):
         time.sleep(period)
 
 def start_periodic_stats_log(tello: Tello, period: int=10) -> None:
+    """
+    starts asynchronously logging battery percentage and min, max temperature in a colorful format
+    """
+    
     thread = threading.Thread(target=_log_stats, args=(tello, period), daemon=True)
     thread.start()
 
 
 
 def get_wifi_connection() -> str | None:
+    """
+    searches for a wifi connection and return it's name or None if it didn't find any
+    """
+    
     ssids = subprocess.check_output(
         [
             "powershell",
@@ -53,6 +68,11 @@ def get_wifi_connection() -> str | None:
     return ssids[0].split(" ")[0]
 
 def check_wifi():
+    """
+    raises an ConnectonError if not connected to wifi
+    raises an ConnectonError if a simple wifi name check fails
+    """
+    
     from settings import settings
     if settings.is_emulator:
         logger.info("Skipping wifi check, because of emulator")
@@ -66,12 +86,31 @@ def check_wifi():
     
     logger.info(f"WiFi connction: {C.BOLD}{wifi}{C.RESET}")
 
+def create_blank_frame(width: int, height: int, color: tuple[int, int, int] = (255, 255, 255)):
+    """
+    returns a frame with width and height
+    """
+    
+    frame = np.full((width, height, 3), color, dtype=np.uint8)
+    return frame
+
 
 def is_mouse_in_bounding_box(mouse: MouseData, x1: int, y1: int, x2: int, y2: int) -> bool:
+    """
+    returns if a mouse is in a bounding box
+    """
+    
     return mouse.x >= x1 and mouse.x <= x2 and mouse.y >= y1 and mouse.y <= y2
 
 
 def get_elements_bounding_box(elements: list[Element], include_nested: bool = False) -> tuple[int, int, int, int] | None:
+    """
+    returns a bounding box from the elements or None if no valid element is provided
+    if include_nested is set to True it finds the bound recursively
+    
+    recommened only for debuging
+    """
+    
     from UI.elements.Container import Container
     from UI.elements.Radio import RadioGroup
     from UI.elements.Shapes import Circle
@@ -108,6 +147,10 @@ def get_elements_bounding_box(elements: list[Element], include_nested: bool = Fa
     )
 
 def is_window_open(window_name: str) -> bool:
+    """
+    returns if an window is opend
+    """
+    
     try:
         return cv2.getWindowProperty(
             window_name,
@@ -118,6 +161,10 @@ def is_window_open(window_name: str) -> bool:
 
 
 def timer(print_interval=0, highest=3, lowest=3):
+    """
+    a decorator function that times a function across time
+    """
+
     def decorator(func):
         times = deque(maxlen=16)
         last_print = 0

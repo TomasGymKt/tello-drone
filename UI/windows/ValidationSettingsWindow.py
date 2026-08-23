@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 from UI.elements import Text, TextStyle, Slider, SliderStyle, Button, ButtonStyle, RadioGroup, Radio, RadioStyle, Container, Line
 from UI.windows.Window import Window
-from utils.common import is_window_open
+from utils.common import create_blank_frame
 from utils.models import AlphaColor, Color, QR_Code, ValidationPreset
 from utils.Logger import logger
 from settings import settings, shared
@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 class ValidationSettingsWindow(Window):
     def __init__(self, window_controller: WindowController, window_name="Validation Settings"):
         super().__init__(window_controller, window_name)
-        self._base_frame = np.full((650, 685, 3), 255, dtype=np.uint8)
+        self._base_frame = create_blank_frame(650, 685)
     
     def _setup(self):
         # === UI variables ===
@@ -52,13 +52,13 @@ class ValidationSettingsWindow(Window):
         self._sliders_container = Container()
         self._sliders_container.enabled = self._preset_name == "custom"
         
-        self._limit_min_side_slider            = Slider(420, 44 , 20.0 , 100.0, self._all_presets["custom"].min_side_px              , self._sliders_callback, SliderStyle(width=250))
-        self._limit_max_side_slider            = Slider(420, 70 , 300.0, 650.0, self._all_presets["custom"].max_side_px              , self._sliders_callback, SliderStyle(width=250))
-        self._limit_top_bottom_ratio_slider    = Slider(420, 96 , 0.5  , 3.0  , self._all_presets["custom"].max_top_bottom_side_ratio, self._sliders_callback, SliderStyle(width=250))
-        self._limit_left_right_ratio_slider    = Slider(420, 122, 0.5  , 3.0  , self._all_presets["custom"].max_left_right_side_ratio, self._sliders_callback, SliderStyle(width=250))
-        self._limit_adjacent_side_ratio_slider = Slider(420, 148, 0.5  , 3.0  , self._all_presets["custom"].max_adjacent_side_ratio  , self._sliders_callback, SliderStyle(width=250))
-        self._limit_diagonal_ratio_slider      = Slider(420, 174, 0.5  , 3.0  , self._all_presets["custom"].max_diagonal_ratio       , self._sliders_callback, SliderStyle(width=250))
-        self._limit_corner_dot_slider          = Slider(420, 239, 0.0  , 1.5  , self._all_presets["custom"].min_corner_dot           , self._sliders_callback, SliderStyle(width=250))
+        self._limit_min_side_slider            = Slider(420, 44 , 15.0, 140.0, self._all_presets["custom"].min_side_px              , self._sliders_callback, SliderStyle(width=250))
+        self._limit_max_side_slider            = Slider(420, 70 , 450 , 600  , self._all_presets["custom"].max_side_px              , self._sliders_callback, SliderStyle(width=250))
+        self._limit_top_bottom_ratio_slider    = Slider(420, 96 , 0.5 , 3.0  , self._all_presets["custom"].max_top_bottom_side_ratio, self._sliders_callback, SliderStyle(width=250))
+        self._limit_left_right_ratio_slider    = Slider(420, 122, 0.5 , 3.0  , self._all_presets["custom"].max_left_right_side_ratio, self._sliders_callback, SliderStyle(width=250))
+        self._limit_adjacent_side_ratio_slider = Slider(420, 148, 0.5 , 3.0  , self._all_presets["custom"].max_adjacent_side_ratio  , self._sliders_callback, SliderStyle(width=250))
+        self._limit_diagonal_ratio_slider      = Slider(420, 174, 0.5 , 3.0  , self._all_presets["custom"].max_diagonal_ratio       , self._sliders_callback, SliderStyle(width=250))
+        self._limit_corner_dot_slider          = Slider(420, 239, 0.0 , 1.5  , self._all_presets["custom"].min_corner_dot           , self._sliders_callback, SliderStyle(width=250))
         
         self._picker_radio = RadioGroup(self._picker_radio_callback)
         self._picker_radio_setup()
@@ -122,18 +122,9 @@ class ValidationSettingsWindow(Window):
         self._root.add(self._gap_time_value_text)
         self._root.add(self._dist_mult_label_text)
         self._root.add(self._dist_mult_slider)
-        self._root.add(self._dist_mult_value_text)
-        
+        self._root.add(self._dist_mult_value_text)  
     
     def _render(self, camera_frame, scan_result):
-        if not self._enabled:
-            return
-        
-        if not is_window_open(self.window_name):
-            self.set_enabled(False)
-            return
-        
-        
         frame = self._base_frame.copy()
         
         self._preset_name = settings.validation_preset

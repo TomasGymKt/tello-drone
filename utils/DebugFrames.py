@@ -1,10 +1,15 @@
 from __future__ import annotations
 
 import threading
-import numpy as np
 
 
 class DebugFrames:
+    """
+    a class to make frames available across threads
+    useful for showing windows from non-main threads
+    should be used only for debuging, since permanent windows should be done with the WindowsController
+    """
+    
     def __init__(self):
         self._lock = threading.Lock()
         self._frames: dict[str, object] = {}
@@ -20,7 +25,3 @@ class DebugFrames:
 
 debug_frames = DebugFrames()
 
-
-def create_blank_frame(width: int, height: int, color: tuple[int, int, int] = (255, 255, 255)):
-    frame = np.full((width, height, 3), color, dtype=np.uint8)
-    return frame

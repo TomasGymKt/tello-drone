@@ -30,11 +30,12 @@ class Slider(Element):
         callback: Callable[[float], None] | None = None,
         style: SliderStyle = SliderStyle(),
     ):
+        super().__init__()
         if min_value > max_value:
             raise ValueError("min_value cannot be greater than max_value")
 
-        self._original_x = x
-        self._original_y = y
+        self._original_x = 0
+        self._original_y = 0
 
         self._x1 = -1
         self._y1 = -1
@@ -43,9 +44,6 @@ class Slider(Element):
 
         self._handle_x = -1
         self._handle_y = -1
-
-        self._set_frame_size_on_render = True
-        self._show_debug_render = False
 
         self._min_value = min_value
         self._max_value = max_value
@@ -57,6 +55,7 @@ class Slider(Element):
         self.is_pressed = False
 
         self.set_value(value)
+        self.set_position(x, y)
 
     @property
     def value(self) -> float:
@@ -83,19 +82,32 @@ class Slider(Element):
 
     def set_style(self, style: SliderStyle):
         self._style = style
-        self._set_frame_size_on_render = True
+        self.set_position()
+
+    def set_position(self, x: int | None = None, y: int | None = None):
+        if x is not None:
+            self._original_x = x
+        if y is not None:
+            self._original_y = y
+
+        if self._frame_width > 0 and self._frame_height > 0:
+            self._resolve_position()
+        else:
+            self._request_layout()
 
     def set_new_frame_size(self, frame):
-        frame_height, frame_width = frame.shape[:2]
+        super().set_new_frame_size(frame)
+        self.set_position()
 
+    def _resolve_position(self):
         self._x1 = self._original_x
         self._y1 = self._original_y
 
         if self._original_x < 0:
-            self._x1 = frame_width + self._original_x - self._style.width
+            self._x1 = self._frame_width + self._original_x - self._style.width
 
         if self._original_y < 0:
-            self._y1 = frame_height + self._original_y - self._style.height
+            self._y1 = self._frame_height + self._original_y - self._style.height
 
         self._x2 = self._x1 + self._style.width
         self._y2 = self._y1 + self._style.height
@@ -125,7 +137,7 @@ class Slider(Element):
             self._max_value - self._min_value
         )
 
-    def handle_mouse(self, mouse: MouseData):
+    def _handle_mouse(self, mouse: MouseData):
         self.is_hovered = is_mouse_in_bounding_box(
             mouse,
             self._x1 - self._style.handle_radius,
@@ -146,11 +158,7 @@ class Slider(Element):
         elif mouse.event == cv2.EVENT_LBUTTONUP:
             self.is_pressed = False
 
-    def render(self, frame):
-        if self._set_frame_size_on_render:
-            self._set_frame_size_on_render = False
-            self.set_new_frame_size(frame)
-
+    def _render(self, frame):
         self._update_handle_position()
 
         center_y = self._y1 + self._style.height // 2
@@ -178,12 +186,6 @@ class Slider(Element):
             self._style.handle_color,
             self._style.handle_thickness,
         )
-
-        if self._show_debug_render:
-            self._debug_render(frame)
-
-    def set_debug_render(self, enabled: bool):
-        self._show_debug_render = enabled
 
     def _debug_render(self, frame):
         cv2.circle(frame, (self._x1, self._y1), 3, (0, 0, 255))

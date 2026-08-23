@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from UI.elements import Button, ButtonStyle, RadioGroup, Radio, RadioStyle, Text, Slider, Container
 from UI.windows.Window import Window
 from utils.Logger import logger
-from utils.common import is_window_open
+from utils.common import create_blank_frame
 from utils.models import AlphaColor, Color, ScanResult
 
 if TYPE_CHECKING:
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 class SettingsWindow(Window):
     def __init__(self, window_controller: WindowController, window_name="Settings"):
         super().__init__(window_controller, window_name)
-        self._base_frame = np.full((600, 600, 3), 255, dtype=np.uint8)
+        self._base_frame = create_blank_frame(600, 600)
     
     def _setup(self):
         # === UI variables ===
@@ -29,17 +29,8 @@ class SettingsWindow(Window):
         self._root.add(self._debug_button)
         self._root.add(self._validation_button)
         self._root.add(self._camera_button)
-        
     
     def _render(self, camera_frame, scan_result: ScanResult):
-        if not self._enabled:
-            return
-        
-        if not is_window_open(self.window_name):
-            self.set_enabled(False)
-            return
-        
-        
         frame = self._base_frame.copy()
         
         self._debug_button_update()
@@ -48,7 +39,6 @@ class SettingsWindow(Window):
         
         self._root.render(frame)
         cv2.imshow(self.window_name, frame)
-    
     
     def _debug_button_update(self):
         self._debug_button.set_text(

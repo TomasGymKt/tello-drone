@@ -7,12 +7,10 @@ from utils.models import MouseData
 
 class Container(Element):
     def __init__(self):
+        super().__init__()
         self._elements: list[Element] = []
-        self.visible = True
         self.enabled = True
         self.opacity = 1.0
-        
-        self._show_debug_render = False
 
     @property
     def elements(self) -> list[Element]:
@@ -20,6 +18,10 @@ class Container(Element):
 
     def add(self, element: Element) -> Element:
         element.set_debug_render(self._show_debug_render)
+        if self._frame_width > 0 and self._frame_height > 0:
+            element._frame_width = self._frame_width
+            element._frame_height = self._frame_height
+            element._request_layout()
         self._elements.append(element)
         return element
 
@@ -29,17 +31,14 @@ class Container(Element):
     def clear(self):
         self._elements.clear()
 
-    def handle_mouse(self, mouse: MouseData):
-        if not self.visible or not self.enabled:
+    def _handle_mouse(self, mouse: MouseData):
+        if not self.enabled:
             return
 
         for element in self._elements:
             element.handle_mouse(mouse)
 
-    def render(self, frame):
-        if not self.visible:
-            return
-        
+    def _render(self, frame):
         if self.opacity == 1.0:
             for element in self._elements:
                 element.render(frame)
@@ -49,14 +48,22 @@ class Container(Element):
                 element.render(overlay)
             cv2.addWeighted(overlay, self.opacity, frame, 1 - self.opacity, 0, frame)
         
-        if self._show_debug_render:
-            self._debug_render(frame)
-    
     def set_debug_render(self, enabled: bool):
-        self._show_debug_render = enabled
+        super().set_debug_render(enabled)
         for element in self._elements:
             element.set_debug_render(enabled)
-    
+
+    def set_style(self, *args, **kwargs):
+        raise NotImplementedError("Container does not have a local style")
+
+    def set_position(self, *args, **kwargs):
+        raise NotImplementedError("Container does not have a local position")
+
+    def set_new_frame_size(self, frame):
+        super().set_new_frame_size(frame)
+        for element in self._elements:
+            element.set_new_frame_size(frame)
+
     def _debug_render(self, frame):
         box = get_elements_bounding_box(self._elements, include_nested=True)
         if box is None:

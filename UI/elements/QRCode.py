@@ -28,16 +28,15 @@ class QRCodePloter(Container):
         self.add(self._data_text)
         self.add(self._size_text)
         self.add(self._distance_text)
-        
     
     def set_scan_result(self, scan_result: ScanResult):
         self._scan_result = scan_result
     
-    def handle_mouse(self, mouse):
+    def _handle_mouse(self, mouse):
         if self._scan_result is not None:
-            return super().handle_mouse(mouse)
-    
-    def render(self, frame):
+            return super()._handle_mouse(mouse)
+
+    def _render(self, frame):
         if not self._scan_result.success:
             return
         
@@ -53,7 +52,7 @@ class QRCodePloter(Container):
         self._data_text_update(qr_code)
         self._size_text_update(qr_code)
         self._distance_text_update(qr_code)
-        return super().render(frame)
+        return super()._render(frame)
 
     def _error_text_update(self, qr_code: QR_Code, screen_center_x: int, screen_center_y):
         text = f"dx:{qr_code.error_x} dy:{qr_code.error_y}"

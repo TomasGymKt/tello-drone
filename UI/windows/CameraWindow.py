@@ -6,7 +6,6 @@ from UI.elements import Container, Text, TextStyle, CenterCross, QRCodePloter, B
 from UI.windows.Window import Window
 from settings import settings
 from utils.PerformanceDisplay import PerformanceDisplay
-from utils.common import is_window_open
 from utils.models import Color, AlphaColor, ScanResult
 from utils.Logger import logger
 from utils.qr_validation import longTermValidator
@@ -43,11 +42,6 @@ class CameraWindow(Window):
         self._validating_setup()
     
     def _render(self, camera_frame, scan_result: ScanResult):
-        if not self._enabled:
-            return
-        if not is_window_open(self.window_name):
-            self._window_handle()
-        
         frame = camera_frame.copy()
     
         self._ghost_update(scan_result)
@@ -67,7 +61,6 @@ class CameraWindow(Window):
         
         self._root.render(frame)
         cv2.imshow(self.window_name, frame)
-    
     
     def _ghost_update(self, scan_result: ScanResult, start_opacity: float = 0.7, fading_mult: float = 1.5):
         if not settings.draw_ghost_qr_code:

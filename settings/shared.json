@@ -47,9 +47,9 @@
       "min_corner_dot": 0.82
     },
     "custom": {
-      "min_side_px": 100.0,
-      "max_side_px": 650,
-      "max_top_bottom_side_ratio": 1.1,
+      "min_side_px": 50.0,
+      "max_side_px": 600,
+      "max_top_bottom_side_ratio": 1.15,
       "max_left_right_side_ratio": 1.35,
       "max_adjacent_side_ratio": 1.95,
       "max_diagonal_ratio": 1.15,

@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from UI.elements import Text, Slider, SliderStyle, Line
 from UI.windows.Window import Window
 from utils.Logger import logger
-from utils.common import is_window_open
+from utils.common import create_blank_frame
 from utils.models import AlphaColor, Color, ScanResult
 from settings import settings
 
@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 class CameraSettingsWindow(Window):
     def __init__(self, window_controller: WindowController, window_name="Camera Settings"):
         super().__init__(window_controller, window_name)
-        self._base_frame = np.full((600, 600, 3), 255, dtype=np.uint8)
+        self._base_frame = create_blank_frame(600, 600)
     
     def _setup(self):
         # === UI variables ===
@@ -39,12 +39,8 @@ class CameraSettingsWindow(Window):
         self._root.add(self._qr_label_text)
         self._root.add(self._qr_slider)
         self._root.add(self._qr_value_text)
-        
-    
-    
+
     def _render(self, camera_frame, scan_result: ScanResult):
-        
-        
         frame = self._base_frame.copy()
         
         self._focal_value_text.set_text(f"{settings.camera_focal_length:.0f}")
@@ -52,7 +48,6 @@ class CameraSettingsWindow(Window):
         
         self._root.render(frame)
         cv2.imshow(self.window_name, frame)
-    
     
     def _focal_callback(self, value: float):
         settings.camera_focal_length = round(value)

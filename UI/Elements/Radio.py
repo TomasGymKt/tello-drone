@@ -24,8 +24,8 @@ class RadioStyle:
 
 class Radio:
     def __init__(self, x: int, y: int, text: str, value, style: RadioStyle = RadioStyle()):
-        self._original_x = x
-        self._original_y = y
+        self._original_x = 0
+        self._original_y = 0
 
         self._x1 = -1
         self._y1 = -1
@@ -37,6 +37,8 @@ class Radio:
 
         self._set_frame_size_on_render = True
         self._show_debug_render = False
+        self._frame_width = -1
+        self._frame_height = -1
 
         self._text = text
         self._value = value
@@ -47,6 +49,7 @@ class Radio:
         self.is_pressed = False
 
         self._calculate_text_size()
+        self.set_position(x, y)
 
     @property
     def selected(self) -> bool:
@@ -68,7 +71,7 @@ class Radio:
         self._style = style
 
         self._calculate_text_size()
-        self._set_frame_size_on_render = True
+        self.set_position()
     
     def set_position(self, x: int | None = None, y: int | None = None):
         if x is not None:
@@ -76,17 +79,26 @@ class Radio:
         if y is not None:
             self._original_y = y
         
-        self._set_frame_size_on_render = True
+        if self._frame_width > 0 and self._frame_height > 0:
+            self._resolve_position()
+        else:
+            self._request_layout()
 
     def set_style(self, style: RadioStyle):
         self._style = style
 
         self._calculate_text_size()
-        self._set_frame_size_on_render = True
+        self.set_position()
 
     def set_new_frame_size(self, frame):
-        frame_height, frame_width = frame.shape[:2]
+        self._frame_height, self._frame_width = frame.shape[:2]
+        self._set_frame_size_on_render = False
+        self.set_position()
 
+    def _request_layout(self):
+        self._set_frame_size_on_render = True
+
+    def _resolve_position(self):
         content_height = max(self._style.radius * 2, self._text_height)
 
         width = (self._text_width + self._style.radius * 2 + self._style.circle_text_gap + self._style.padding.horizontal)
@@ -97,10 +109,10 @@ class Radio:
         self._y1 = self._original_y
 
         if self._original_x < 0:
-            self._x1 = frame_width + self._original_x - width
+            self._x1 = self._frame_width + self._original_x - width
 
         if self._original_y < 0:
-            self._y1 = frame_height + self._original_y - height
+            self._y1 = self._frame_height + self._original_y - height
 
         self._x2 = self._x1 + width
         self._y2 = self._y1 + height
@@ -177,11 +189,10 @@ class Radio:
 
 class RadioGroup(Element):
     def __init__(self, callback: Callable[[object], None] | None = None):
+        super().__init__()
         self._radios: list[Radio] = []
         self._selected: Radio | None = None
         self._callback = callback
-        
-        self._show_debug_render = False
 
     @property
     def selected(self) -> Radio | None:
@@ -209,25 +220,29 @@ class RadioGroup(Element):
         if self._callback is not None:
             self._callback(radio._value)
 
-    def handle_mouse(self, mouse: MouseData):
+    def _handle_mouse(self, mouse: MouseData):
         for radio in self._radios:
             radio.handle_mouse(mouse)
 
     def set_new_frame_size(self, frame):
+        super().set_new_frame_size(frame)
         for radio in self._radios:
             radio.set_new_frame_size(frame)
 
-    def render(self, frame):
+    def _render(self, frame):
         for radio in self._radios:
             radio.render(frame)
-        
-        if self._show_debug_render:
-            self._debug_render(frame)
 
     def set_debug_render(self, enabled: bool):
-        self._show_debug_render = enabled
+        super().set_debug_render(enabled)
         for radio in self._radios:
             radio.set_debug_render(enabled)
+
+    def set_style(self, *args, **kwargs):
+        raise NotImplementedError("RadioGroup does not have a shared style")
+
+    def set_position(self, *args, **kwargs):
+        raise NotImplementedError("RadioGroup does not have a shared position")
     
     def _debug_render(self, frame):
         box = get_elements_bounding_box(self._radios, include_nested=False)
