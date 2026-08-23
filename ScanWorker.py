@@ -8,6 +8,15 @@ from scanners import SCANNERS, scan_with
 
 
 def scan_for_qr_code(frame, scan_method_order: list[str]) -> ScanResult:
+    """Try configured scanner methods until one finds a QR code.
+
+    Args:
+        frame: Image to scan.
+        scan_method_order: Scanner method names in priority order.
+
+    Returns:
+        Successful scan result for the first detection, or an unsuccessful result.
+    """
     for scan_method in scan_method_order:
         qr_code = None
 
@@ -21,7 +30,14 @@ def scan_for_qr_code(frame, scan_method_order: list[str]) -> ScanResult:
 
 
 class ScanWorker:
+    """Background worker that scans only the most recently submitted frame."""
+
     def __init__(self, scan_method_order=settings.scan_method_order):
+        """Start the background scan thread.
+
+        Args:
+            scan_method_order: Scanner method names in priority order.
+        """
         self.scan_method_order = list(scan_method_order)
 
         self._lock = threading.Lock()
@@ -34,15 +50,26 @@ class ScanWorker:
         self._thread.start()
 
     def submit_frame(self, frame) -> None:
+        """Replace the pending frame and wake the scan thread.
+
+        Args:
+            frame: Image to scan; a copy is retained for thread safety.
+        """
         with self._condition:
             self._latest_frame = frame.copy()
             self._condition.notify()
 
     def get_latest_result(self) -> ScanResult:
+        """Return the most recently completed scan result.
+
+        Returns:
+            Latest result, initially an unsuccessful empty result.
+        """
         with self._lock:
             return self._latest_result
 
     def stop(self) -> None:
+        """Stop the scan thread and wait briefly for it to finish."""
         with self._condition:
             self._is_running = False
             self._condition.notify_all()
@@ -50,6 +77,7 @@ class ScanWorker:
         self._thread.join(timeout=1)
 
     def _worker_loop(self) -> None:
+        """Wait for frames and publish timing-annotated scan results."""
         while True:
             with self._condition:
                 while self._is_running and self._latest_frame is None:
@@ -71,5 +99,4 @@ class ScanWorker:
             
             with self._lock:
                 self._latest_result = result
-
 

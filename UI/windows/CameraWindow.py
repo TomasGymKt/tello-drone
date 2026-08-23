@@ -15,11 +15,20 @@ if TYPE_CHECKING:
 
 
 class CameraWindow(Window):
+    """Primary camera feed window with QR detection overlays."""
+
     def __init__(self, window_controller: WindowController, window_name="Camera"):
+        """Create the always-on camera window.
+
+        Args:
+            window_controller: Controller that owns this window.
+            window_name: OpenCV title and controller lookup key.
+        """
         super().__init__(window_controller, window_name, enabled_by_default=True)
         self._keep_enabled = True
 
     def _setup(self):
+        """Create camera overlays, status text, and settings controls."""
         # === UI variables ===
         self._last_found_result: ScanResult = ScanResult(last_scan_finished_at=0)
         self._ghost_result: ScanResult | None = None
@@ -42,6 +51,12 @@ class CameraWindow(Window):
         self._validating_setup()
     
     def _render(self, camera_frame, scan_result: ScanResult):
+        """Draw the latest camera frame and QR validation overlays.
+
+        Args:
+            camera_frame: Camera image to copy and display.
+            scan_result: Latest QR scan result to visualize.
+        """
         frame = camera_frame.copy()
     
         self._ghost_update(scan_result)
@@ -63,6 +78,13 @@ class CameraWindow(Window):
         cv2.imshow(self.window_name, frame)
     
     def _ghost_update(self, scan_result: ScanResult, start_opacity: float = 0.7, fading_mult: float = 1.5):
+        """Fade the most recently detected QR code after detection is lost.
+
+        Args:
+            scan_result: Latest QR scan result.
+            start_opacity: Initial overlay opacity after a lost detection.
+            fading_mult: Opacity reduction per second.
+        """
         if not settings.draw_ghost_qr_code:
             return
         
@@ -82,6 +104,11 @@ class CameraWindow(Window):
                 self._ghost_result = None
 
     def _rejected_setup(self, max_amount: int = 3):
+        """Create the rotating pool of rejected-QR outlines.
+
+        Args:
+            max_amount: Maximum rejected detections shown at once.
+        """
         self._rejected_amount = max_amount
         self._rejected_outlines = [Outline(AlphaColor(0, 0, 255, 0.4), 1) for _ in range(max_amount)]
         self._rejected_times = [-1 for _ in range(max_amount)]
@@ -91,6 +118,13 @@ class CameraWindow(Window):
             self._root.add(self._rejected_outlines[i])
     
     def _rejected_update(self, scan_result: ScanResult, start_opacity: float = 0.4, fading_mult: float = 1.2):
+        """Add and fade outlines for QR codes rejected before validation.
+
+        Args:
+            scan_result: Latest QR scan result.
+            start_opacity: Initial rejected-outline opacity.
+            fading_mult: Opacity reduction per second.
+        """
         if not settings.draw_rejected_qr_codes:
             return
         
@@ -109,6 +143,11 @@ class CameraWindow(Window):
                 self._rejected_outlines[i].visible = False
     
     def _validating_setup(self, max_amount: int = 3):
+        """Create validation-track circles and their shared outline.
+
+        Args:
+            max_amount: Maximum validation tracks shown at once.
+        """
         self._validating_amount = max_amount
         self._validating_circles = [Circle(0, 0, 0, AlphaColor(0, 255, 255, 0.6)) for _ in range(max_amount)]
         self._validating_outline = Outline(AlphaColor(0, 255, 255, 0.4))
@@ -118,6 +157,11 @@ class CameraWindow(Window):
             self._root.add(self._validating_outline)
     
     def _validating_update(self, scan_result: ScanResult):
+        """Update geometry and colors for active validation tracks.
+
+        Args:
+            scan_result: Latest QR scan result used for validation outline state.
+        """
         if scan_result.in_validation:
             self._validating_outline.visible = True
             self._validating_outline.set_points(scan_result.qr_code.points)
@@ -147,6 +191,7 @@ class CameraWindow(Window):
             )
     
     def _settings_button_update(self):
+        """Reflect the settings window's current open state in its button."""
         is_settings_enabled = self.controller.windows["Settings"].is_enabled
         self._settings_button.set_text(
             f"{"Close" if is_settings_enabled else "Open"} settings",
@@ -157,5 +202,6 @@ class CameraWindow(Window):
         ) 
     
     def _settings_button_callback(self):
+        """Toggle the settings window."""
         settingsWindow = self.controller.windows["Settings"]
         settingsWindow.set_enabled(not settingsWindow.is_enabled)

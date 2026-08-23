@@ -18,6 +18,17 @@ models_dir = os.path.join(os.path.dirname(__file__), "wechat_models")
 
 
 def _wechat_model_path(filename: str) -> str:
+    """Resolve and validate a bundled WeChat QR model file.
+
+    Args:
+        filename: Model filename within the scanner's model directory.
+
+    Returns:
+        Existing absolute path to the requested model file.
+
+    Raises:
+        FileNotFoundError: If the requested model file is unavailable.
+    """
     path = os.path.join(models_dir, filename)
     if not os.path.exists(path):
         raise FileNotFoundError(f"Wechat QR model file not found: {path}")
@@ -32,6 +43,15 @@ we_detector = cv2.wechat_qrcode_WeChatQRCode(
 )
 
 def _try_detect(img, scale=1.0) -> QR_Code | None:
+    """Run the WeChat detector and map points back to source scale.
+
+    Args:
+        img: Image passed to the WeChat detector.
+        scale: Resize scale applied before detection.
+
+    Returns:
+        Detected QR code, or None when no code is found.
+    """
     texts, points = we_detector.detectAndDecode(img)
 
     if len(points) == 0:
@@ -45,6 +65,14 @@ def _try_detect(img, scale=1.0) -> QR_Code | None:
 
 
 def wechat_QR_scan(frame) -> QR_Code | None:
+    """Scan a frame through several WeChat QR preprocessing passes.
+
+    Args:
+        frame: Image to scan.
+
+    Returns:
+        First detected QR code, or None when every pass fails.
+    """
 
     # ---------- 1) originál ----------
     qr = _try_detect(frame)
@@ -93,7 +121,16 @@ def wechat_QR_scan(frame) -> QR_Code | None:
 
 
 class Scanner(BaseScanner):
+    """WeChat QR-code scanner backend with preprocessing fallbacks."""
     method = ScanMethod.WECHAT
 
     def scan(self, frame) -> QR_Code | None:
+        """Scan an image with the WeChat QR detector.
+
+        Args:
+            frame: Image to scan.
+
+        Returns:
+            Detected QR code, or None when no code is found.
+        """
         return wechat_QR_scan(frame)

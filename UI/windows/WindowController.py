@@ -6,7 +6,10 @@ from UI.windows.Window import Window
 from utils.models import ScanResult
 
 class WindowController:
+    """Own and render every application window."""
+
     def __init__(self):
+        """Create and register the application's standard windows."""
         self._windows: dict[str, Window] = {}
         
         self.add_window( CameraWindow(self) )
@@ -16,13 +19,29 @@ class WindowController:
     
     @property
     def windows(self):
+        """Return windows indexed by their configured names.
+
+        Returns:
+            Mapping from window names to window instances.
+        """
         return self._windows
     
     def add_window(self, window: Window):
+        """Register or replace a window by name.
+
+        Args:
+            window: Window instance to register.
+        """
         self._windows[window.window_name] = window
     
     
     def render(self, camera_frame, scan_result: ScanResult):
+        """Render each registered window.
+
+        Args:
+            camera_frame: Latest camera image available to windows.
+            scan_result: Latest QR scan result available to windows.
+        """
         for window in self._windows.values():
             window.render(camera_frame, scan_result)
     

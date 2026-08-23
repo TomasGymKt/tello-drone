@@ -19,9 +19,11 @@ if TYPE_CHECKING:
 
 
 def _log_stats(tello: Tello, period: int):
-    """
-    internal function, you don't normally call this
-    logs the current battery percentage and min, max temperature in a colorful format
+    """Continuously log battery and temperature information.
+
+    Args:
+        tello: Connected drone used to read telemetry.
+        period: Delay between telemetry logs in seconds.
     """
     
     while True:
@@ -36,8 +38,11 @@ def _log_stats(tello: Tello, period: int):
         time.sleep(period)
 
 def start_periodic_stats_log(tello: Tello, period: int=10) -> None:
-    """
-    starts asynchronously logging battery percentage and min, max temperature in a colorful format
+    """Start a daemon thread that logs drone telemetry periodically.
+
+    Args:
+        tello: Connected drone used to read telemetry.
+        period: Delay between telemetry logs in seconds.
     """
     
     thread = threading.Thread(target=_log_stats, args=(tello, period), daemon=True)
@@ -46,8 +51,13 @@ def start_periodic_stats_log(tello: Tello, period: int=10) -> None:
 
 
 def get_wifi_connection() -> str | None:
-    """
-    searches for a wifi connection and return it's name or None if it didn't find any
+    """Return the active physical Wi-Fi profile name.
+
+    Returns:
+        Connected Wi-Fi name, or None when no physical Wi-Fi is connected.
+
+    Raises:
+        Exception: If multiple physical Wi-Fi profiles are active.
     """
     
     ssids = subprocess.check_output(
@@ -68,9 +78,10 @@ def get_wifi_connection() -> str | None:
     return ssids[0].split(" ")[0]
 
 def check_wifi():
-    """
-    raises an ConnectonError if not connected to wifi
-    raises an ConnectonError if a simple wifi name check fails
+    """Validate the Tello Wi-Fi connection unless emulator mode is active.
+
+    Raises:
+        ConnectionError: If Wi-Fi is disconnected or not a Tello network.
     """
     
     from settings import settings
@@ -87,8 +98,15 @@ def check_wifi():
     logger.info(f"WiFi connction: {C.BOLD}{wifi}{C.RESET}")
 
 def create_blank_frame(width: int, height: int, color: tuple[int, int, int] = (255, 255, 255)):
-    """
-    returns a frame with width and height
+    """Create a solid BGR OpenCV image.
+
+    Args:
+        width: Frame width in pixels.
+        height: Frame height in pixels.
+        color: BGR fill color.
+
+    Returns:
+        New uint8 OpenCV image filled with color.
     """
     
     frame = np.full((width, height, 3), color, dtype=np.uint8)
@@ -96,19 +114,31 @@ def create_blank_frame(width: int, height: int, color: tuple[int, int, int] = (2
 
 
 def is_mouse_in_bounding_box(mouse: MouseData, x1: int, y1: int, x2: int, y2: int) -> bool:
-    """
-    returns if a mouse is in a bounding box
+    """Check whether a pointer lies inside inclusive rectangle bounds.
+
+    Args:
+        mouse: Pointer coordinates to test.
+        x1: Left bound.
+        y1: Top bound.
+        x2: Right bound.
+        y2: Bottom bound.
+
+    Returns:
+        True when the pointer is inside or on the rectangle boundary.
     """
     
     return mouse.x >= x1 and mouse.x <= x2 and mouse.y >= y1 and mouse.y <= y2
 
 
 def get_elements_bounding_box(elements: list[Element], include_nested: bool = False) -> tuple[int, int, int, int] | None:
-    """
-    returns a bounding box from the elements or None if no valid element is provided
-    if include_nested is set to True it finds the bound recursively
-    
-    recommened only for debuging
+    """Calculate bounds around drawable elements for debug rendering.
+
+    Args:
+        elements: Elements whose geometry is inspected.
+        include_nested: Whether to descend into containers and radio groups.
+
+    Returns:
+        Left, top, right, and bottom bounds, or None when no geometry exists.
     """
     
     from UI.elements.Container import Container
@@ -117,6 +147,11 @@ def get_elements_bounding_box(elements: list[Element], include_nested: bool = Fa
     bounds = []
 
     def collect(elements: list[Element]):
+        """Recursively collect drawable bounds from an element sequence.
+
+        Args:
+            elements: Elements to inspect at the current nesting level.
+        """
         for element in elements:
             if isinstance(element, Container):
                 if include_nested:
@@ -147,8 +182,13 @@ def get_elements_bounding_box(elements: list[Element], include_nested: bool = Fa
     )
 
 def is_window_open(window_name: str) -> bool:
-    """
-    returns if an window is opend
+    """Check whether an OpenCV window is still visible.
+
+    Args:
+        window_name: Title of the window to inspect.
+
+    Returns:
+        True when the window is visible; False for missing or closed windows.
     """
     
     try:
@@ -161,16 +201,40 @@ def is_window_open(window_name: str) -> bool:
 
 
 def timer(print_interval=0, highest=3, lowest=3):
-    """
-    a decorator function that times a function across time
+    """Create a decorator that logs rolling execution-time statistics.
+
+    Args:
+        print_interval: Minimum seconds between statistic log messages.
+        highest: Number of slowest samples included in the high average.
+        lowest: Number of fastest samples included in the low average.
+
+    Returns:
+        Decorator that wraps a callable with timing instrumentation.
     """
 
     def decorator(func):
+        """Wrap a callable with rolling timing measurements.
+
+        Args:
+            func: Callable to instrument.
+
+        Returns:
+            Callable that preserves the original result after recording duration.
+        """
         times = deque(maxlen=16)
         last_print = 0
 
         @wraps(func)
         def wrapper(*args, **kwargs):
+            """Call the wrapped function and record its execution duration.
+
+            Args:
+                *args: Positional arguments forwarded to the wrapped callable.
+                **kwargs: Keyword arguments forwarded to the wrapped callable.
+
+            Returns:
+                Result returned by the wrapped callable.
+            """
             nonlocal last_print
 
             start = time.perf_counter()
@@ -193,11 +257,11 @@ def timer(print_interval=0, highest=3, lowest=3):
 
                 logger.debug(
                     f"{C.DIM     }Timer{C.RESET} '{func.__name__}' | "
-                    f"{C.FG_RED  }Min: {minimum:7.3f} ms{C.RESET} | "
-                    f"{C.FG_GREEN}Max: {maximum:7.3f} ms{C.RESET} | "
-                    f"{C.FG_BLUE }Avg: {average:7.3f} ms{C.RESET} {C.DIM}| "
-                    f"{C.FG_RED  }Bottom {lowest} avg: {lowest_avg:7.3f} ms{C.FG_WHITE} | "
-                    f"{C.FG_GREEN}Top {highest} avg: {highest_avg:7.3f} ms{C.RESET}"
+                    f"{C.RED  }Min: {minimum:7.3f} ms{C.RESET} | "
+                    f"{C.GREEN}Max: {maximum:7.3f} ms{C.RESET} | "
+                    f"{C.BLUE }Avg: {average:7.3f} ms{C.RESET} {C.DIM}| "
+                    f"{C.RED  }Bottom {lowest} avg: {lowest_avg:7.3f} ms{C.WHITE} | "
+                    f"{C.GREEN}Top {highest} avg: {highest_avg:7.3f} ms{C.RESET}"
                 )
 
                 last_print = now

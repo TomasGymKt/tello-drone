@@ -8,7 +8,10 @@ from utils.models import Color, AlphaColor, QR_Code, ScanResult
 
 
 class QRCodePloter(Container):
+    """Draw QR-code detection geometry and annotation text over a frame."""
+
     def __init__(self):
+        """Create the QR-code overlay and its child elements."""
         super().__init__()
         
         
@@ -30,13 +33,28 @@ class QRCodePloter(Container):
         self.add(self._distance_text)
     
     def set_scan_result(self, scan_result: ScanResult):
+        """Set the latest QR scan result to display.
+
+        Args:
+            scan_result: Detection result whose QR code will be annotated.
+        """
         self._scan_result = scan_result
     
     def _handle_mouse(self, mouse):
+        """Forward mouse events to overlay children when a result is available.
+
+        Args:
+            mouse: Event type and pointer coordinates to forward.
+        """
         if self._scan_result is not None:
             return super()._handle_mouse(mouse)
 
     def _render(self, frame):
+        """Update QR annotations and render them for a successful scan.
+
+        Args:
+            frame: OpenCV image that receives the QR overlay.
+        """
         if not self._scan_result.success:
             return
         
@@ -55,6 +73,13 @@ class QRCodePloter(Container):
         return super()._render(frame)
 
     def _error_text_update(self, qr_code: QR_Code, screen_center_x: int, screen_center_y):
+        """Position and update the center-to-QR error annotation.
+
+        Args:
+            qr_code: Detected QR code to annotate.
+            screen_center_x: Horizontal center of the target frame.
+            screen_center_y: Vertical center of the target frame.
+        """
         text = f"dx:{qr_code.error_x} dy:{qr_code.error_y}"
     
         style = self._error_text._style
@@ -67,6 +92,11 @@ class QRCodePloter(Container):
         self._error_text.set_position(text_x, text_y)
     
     def _data_text_update(self, qr_code: QR_Code):
+        """Update the decoded QR payload annotation.
+
+        Args:
+            qr_code: Detected QR code whose payload is displayed.
+        """
         self._data_text.set_text(
             "No Data" if qr_code.text is None else qr_code.text,
             TextStyle(Color(0, 0, 255), fontSize=0.5) if qr_code.text is None else TextStyle(Color(0, 255, 0), fontSize=0.6)
@@ -74,12 +104,22 @@ class QRCodePloter(Container):
         self._data_text.set_position(qr_code.points.bottom_left.x, qr_code.points.bottom_left.y + 5)
     
     def _size_text_update(self, qr_code: QR_Code):
+        """Update the measured QR-size annotation.
+
+        Args:
+            qr_code: Detected QR code whose size is displayed.
+        """
         self._size_text.set_text(
             f"Size: {qr_code.size:.0f}"
         )
         self._size_text.set_position(qr_code.points.top_left.x, qr_code.points.top_left.y - 49)
     
     def _distance_text_update(self, qr_code: QR_Code):
+        """Update the estimated QR-distance annotation.
+
+        Args:
+            qr_code: Detected QR code whose distance is displayed.
+        """
         self._distance_text.set_text(
             f"Dist.: {qr_code.distance_cm:.1f} cm"
         )

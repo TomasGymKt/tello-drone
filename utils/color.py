@@ -2,18 +2,19 @@ import colorsys
 from utils.Logger import logger
 
 class C:
+    """ANSI escape-code constants and terminal color constructors."""
     RESET  = "\033[0m"
     BOLD   = "\033[1m"
     DIM    = "\033[2m"
     
-    FG_BLACK   = "\033[30m"
-    FG_RED     = "\033[31m"
-    FG_GREEN   = "\033[32m"
-    FG_YELLOW  = "\033[33m"
-    FG_BLUE    = "\033[34m"
-    FG_MAGENTA = "\033[35m"
-    FG_CYAN    = "\033[36m"
-    FG_WHITE   = "\033[37m"
+    BLACK   = "\033[30m"
+    RED     = "\033[31m"
+    GREEN   = "\033[32m"
+    YELLOW  = "\033[33m"
+    BLUE    = "\033[34m"
+    MAGENTA = "\033[35m"
+    CYAN    = "\033[36m"
+    WHITE   = "\033[37m"
     
     BG_BLACK   = "\033[40m"
     BG_RED     = "\033[41m"
@@ -24,14 +25,14 @@ class C:
     BG_CYAN    = "\033[46m"
     BG_WHITE   = "\033[47m"
     
-    FG_BRIGHT_BLACK   = "\033[90m"
-    FG_BRIGHT_RED     = "\033[91m"
-    FG_BRIGHT_GREEN   = "\033[92m"
-    FG_BRIGHT_YELLOW  = "\033[93m"
-    FG_BRIGHT_BLUE    = "\033[94m"
-    FG_BRIGHT_MAGENTA = "\033[95m"
-    FG_BRIGHT_CYAN    = "\033[96m"
-    FG_BRIGHT_WHITE   = "\033[97m"
+    BRIGHT_BLACK   = "\033[90m"
+    BRIGHT_RED     = "\033[91m"
+    BRIGHT_GREEN   = "\033[92m"
+    BRIGHT_YELLOW  = "\033[93m"
+    BRIGHT_BLUE    = "\033[94m"
+    BRIGHT_MAGENTA = "\033[95m"
+    BRIGHT_CYAN    = "\033[96m"
+    BRIGHT_WHITE   = "\033[97m"
     
     BG_BRIGHT_BLACK   = "\033[100m"
     BG_BRIGHT_RED     = "\033[101m"
@@ -43,20 +44,44 @@ class C:
     BG_BRIGHT_WHITE   = "\033[107m"
     
     def FG_8bit(color_8bit: int) -> str:
-        "Use the table [here](https://en.wikipedia.org/wiki/ANSI_escape_code#8-bit) for reference"
+        """Return an ANSI 8-bit foreground color escape sequence.
+
+        Args:
+            color_8bit: ANSI palette index from 0 through 255.
+
+        Returns:
+            Foreground-color escape sequence, or an empty string when invalid.
+        """
         if color_8bit < 0 or color_8bit > 255:
             logger.warn("Color out of 8 bit range (0-255)")
             return ""
         return f"\033[38;5;{color_8bit}m"
     
     def BG_8bit(color_8bit: int) -> str:
-        "Use the table [here](https://en.wikipedia.org/wiki/ANSI_escape_code#8-bit) for reference"
+        """Return an ANSI 8-bit background color escape sequence.
+
+        Args:
+            color_8bit: ANSI palette index from 0 through 255.
+
+        Returns:
+            Background-color escape sequence, or an empty string when invalid.
+        """
         if color_8bit < 0 or color_8bit > 255:
             logger.warn("Color out of 8 bit range (0-255)")
             return ""
         return f"\033[48;5;{color_8bit}m"
     
     def FG_24bit(r: int, b: int, g: int) -> str:
+        """Return an ANSI true-color foreground escape sequence.
+
+        Args:
+            r: Red channel from 0 through 255.
+            b: Blue channel from 0 through 255.
+            g: Green channel from 0 through 255.
+
+        Returns:
+            Foreground-color escape sequence, or an empty string when invalid.
+        """
         if r < 0 or r > 255:
             logger.warn("RED channel out of 8 bit range (0-255)")
             return ""
@@ -70,6 +95,16 @@ class C:
         return f"\033[38;2;{r};{g};{b}m"
     
     def BG_24bit(r: int, b: int, g: int) -> str:
+        """Return an ANSI true-color background escape sequence.
+
+        Args:
+            r: Red channel from 0 through 255.
+            b: Blue channel from 0 through 255.
+            g: Green channel from 0 through 255.
+
+        Returns:
+            Background-color escape sequence, or an empty string when invalid.
+        """
         if r < 0 or r > 255:
             logger.warn("RED channel out of 8 bit range (0-255)")
             return ""
@@ -84,7 +119,14 @@ class C:
 
 
 def colorful_battery(percentage: int) -> str:
-    """returns {percentage}% with color"""
+    """Format battery percentage with an ANSI severity color.
+
+    Args:
+        percentage: Battery charge percentage.
+
+    Returns:
+        Colorized percentage string with an ANSI reset sequence.
+    """
     
     colors = [196, 202, 208, 214, 220, 226, 190, 154, 118, 82, 46]
     index = min(len(colors) - 1, percentage // 10)
@@ -92,16 +134,30 @@ def colorful_battery(percentage: int) -> str:
     return f"{C.FG_8bit(colors[index])}{percentage}%{C.RESET}"
 
 def colorful_temperature(temp: int) -> str:
-    """returns {temp}°C with color"""
+    """Format temperature with an ANSI safety color.
+
+    Args:
+        temp: Temperature in degrees Celsius.
+
+    Returns:
+        Colorized temperature string with an ANSI reset sequence.
+    """
     if temp < 82:
-        return f"{C.FG_BRIGHT_GREEN}{temp}°C{C.RESET}"
+        return f"{C.BRIGHT_GREEN}{temp}°C{C.RESET}"
     elif temp < 88:
-        return f"{C.FG_BRIGHT_YELLOW}{temp}°C{C.RESET}"
+        return f"{C.BRIGHT_YELLOW}{temp}°C{C.RESET}"
     else:
-        return f"{C.FG_BRIGHT_RED}{temp}°C{C.RESET}"
+        return f"{C.BRIGHT_RED}{temp}°C{C.RESET}"
 
 def generate_colors(max_colors):
-    """return (b,g,r)"""
+    """Generate evenly distributed BGR colors.
+
+    Args:
+        max_colors: Number of distinct colors to generate.
+
+    Returns:
+        List of BGR color tuples.
+    """
     colors = []
 
     for i in range(max_colors):

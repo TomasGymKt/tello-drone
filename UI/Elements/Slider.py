@@ -10,6 +10,7 @@ from utils.models import Color, MouseData
 
 @dataclass(slots=True)
 class SliderStyle:
+    """Colors and dimensions used to draw a slider."""
     color_left: Color = Color(255, 117, 0)
     color_right: Color = Color(239, 239, 239)
     handle_color: Color = color_left
@@ -20,6 +21,7 @@ class SliderStyle:
 
 
 class Slider(Element):
+    """Interactive slider that maps pointer position to a numeric range."""
     def __init__(
         self,
         x: int,
@@ -30,6 +32,20 @@ class Slider(Element):
         callback: Callable[[float], None] | None = None,
         style: SliderStyle = SliderStyle(),
     ):
+        """Create a slider.
+
+        Args:
+            x: Left edge, or right offset when negative.
+            y: Top edge, or bottom offset when negative.
+            min_value: Smallest selectable value.
+            max_value: Largest selectable value.
+            value: Initial value, clamped to the selectable range.
+            callback: Optional function called after the value changes.
+            style: Colors and dimensions used to render the slider.
+
+        Raises:
+            ValueError: If min_value exceeds max_value.
+        """
         super().__init__()
         if min_value > max_value:
             raise ValueError("min_value cannot be greater than max_value")
@@ -59,17 +75,37 @@ class Slider(Element):
 
     @property
     def value(self) -> float:
+        """Return the slider's current value.
+
+        Returns:
+            Current value within the configured range.
+        """
         return self._value
 
     @property
     def min_value(self) -> float:
+        """Return the smallest selectable value.
+
+        Returns:
+            Configured minimum value.
+        """
         return self._min_value
 
     @property
     def max_value(self) -> float:
+        """Return the largest selectable value.
+
+        Returns:
+            Configured maximum value.
+        """
         return self._max_value
 
     def set_value(self, value: float):
+        """Clamp and set the slider value.
+
+        Args:
+            value: Requested value within or outside the selectable range.
+        """
         value = max(self._min_value, min(value, self._max_value))
 
         if value == self._value:
@@ -81,10 +117,21 @@ class Slider(Element):
             self._callback(value)
 
     def set_style(self, style: SliderStyle):
+        """Replace slider colors and dimensions, then recompute layout.
+
+        Args:
+            style: New slider rendering configuration.
+        """
         self._style = style
         self.set_position()
 
     def set_position(self, x: int | None = None, y: int | None = None):
+        """Update the slider's source position and resolve it against the frame.
+
+        Args:
+            x: New left edge, or right offset when negative.
+            y: New top edge, or bottom offset when negative.
+        """
         if x is not None:
             self._original_x = x
         if y is not None:
@@ -96,10 +143,16 @@ class Slider(Element):
             self._request_layout()
 
     def set_new_frame_size(self, frame):
+        """Update layout bounds and resolve the slider position.
+
+        Args:
+            frame: OpenCV image whose dimensions define layout bounds.
+        """
         super().set_new_frame_size(frame)
         self.set_position()
 
     def _resolve_position(self):
+        """Resolve source coordinates into track and handle bounds."""
         self._x1 = self._original_x
         self._y1 = self._original_y
 
@@ -115,6 +168,7 @@ class Slider(Element):
         self._update_handle_position()
 
     def _update_handle_position(self):
+        """Place the handle according to the current normalized value."""
         if self._max_value == self._min_value:
             normalized = 0.0
         else:
@@ -130,6 +184,14 @@ class Slider(Element):
         self._handle_y = self._y1 + self._style.height // 2
 
     def _value_from_mouse(self, mouse: MouseData) -> float:
+        """Convert a pointer position into a clamped slider value.
+
+        Args:
+            mouse: Pointer coordinates to convert.
+
+        Returns:
+            Value corresponding to the pointer's horizontal position.
+        """
         normalized = (mouse.x - self._x1) / self._style.width
         normalized = max(0.0, min(normalized, 1.0))
 
@@ -138,6 +200,11 @@ class Slider(Element):
         )
 
     def _handle_mouse(self, mouse: MouseData):
+        """Update interaction state and value from a mouse event.
+
+        Args:
+            mouse: Event type and pointer coordinates to process.
+        """
         self.is_hovered = is_mouse_in_bounding_box(
             mouse,
             self._x1 - self._style.handle_radius,
@@ -159,6 +226,11 @@ class Slider(Element):
             self.is_pressed = False
 
     def _render(self, frame):
+        """Draw the filled track, remaining track, and handle.
+
+        Args:
+            frame: OpenCV image that receives the slider drawing.
+        """
         self._update_handle_position()
 
         center_y = self._y1 + self._style.height // 2
@@ -188,6 +260,11 @@ class Slider(Element):
         )
 
     def _debug_render(self, frame):
+        """Draw resolved bounds and handle guides.
+
+        Args:
+            frame: OpenCV image that receives the debug drawing.
+        """
         cv2.circle(frame, (self._x1, self._y1), 3, (0, 0, 255))
         cv2.circle(frame, (self._x1, self._y1), 12, (0, 0, 255))
 

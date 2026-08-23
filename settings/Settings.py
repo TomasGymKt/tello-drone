@@ -6,6 +6,7 @@ TELLO_IP: Final = "192.168.10.1"
 LOCALHOST_IP: Final = "127.0.0.1"
 
 class ScanMethod(StrEnum):
+    """Identifiers for the available QR scanner backends."""
     ZXING = "zxing"
     CV2 = "cv2"
     CONTOURS = "contours"
@@ -13,6 +14,7 @@ class ScanMethod(StrEnum):
 
 @dataclass
 class LongTermValidationSettings:
+    """Timing and geometry settings for multi-frame QR validation."""
     period: float = 0.2 # Minimum time before a QR code can be valid
     # keep in mind that a QR code has to be scaned min_appearance times in the period, so for an example:
     #   period=0.2, min_appearance=2
@@ -23,6 +25,7 @@ class LongTermValidationSettings:
 
 @dataclass(slots=True)
 class Settings:
+    """Mutable runtime configuration for scanning, display, and networking."""
     # ===== General =====
 
     debug: bool = True
@@ -44,12 +47,22 @@ class Settings:
 
     @property
     def ip_address(self) -> str:
+        """Return the Tello or emulator address for the active mode.
+
+        Returns:
+            Drone address in normal mode, otherwise localhost.
+        """
         if self.is_emulator:
             return LOCALHOST_IP
         return TELLO_IP
     
     @property
     def calibration_value(self) -> float:
+        """Return the focal-length and QR-size calibration product.
+
+        Returns:
+            Calibration value used for distance estimation.
+        """
         return self.camera_focal_length * self.qr_code_size_cm
     
 

@@ -7,8 +7,13 @@ from settings import settings, shared
 
 
 def is_plausible_qr_code(qr_code: QR_Code) -> bool:
-    """
-    Extremely fast (<0.05 ms (on my hardware)) shape filter for rejecting detections that clearly do not look like a QR code.
+    """Check whether detected corners satisfy the active QR geometry preset.
+
+    Args:
+        qr_code: Detected QR code whose four corners are evaluated.
+
+    Returns:
+        True when every active geometric threshold is satisfied.
     """
     
     preset = shared.get_validation_presets()[settings.validation_preset]
@@ -73,14 +78,30 @@ def is_plausible_qr_code(qr_code: QR_Code) -> bool:
 
 
 class LongTermValidator:
+    """Track QR detections over time before treating them as valid."""
+
     def __init__(self):
+        """Create a validator with no active QR tracks."""
         self._tracks: list[QRTrack] = []
     
     @property
     def tracks(self):
+        """Return active tracks with validated and recent tracks first.
+
+        Returns:
+            Sorted active QR tracks.
+        """
         return sorted(self._tracks, key=lambda track: (not track.validated, -track.last_seen_at))
 
     def validate(self, qr_code: QR_Code) -> bool:
+        """Update a matching track and report whether it is validated.
+
+        Args:
+            qr_code: Current plausible QR detection.
+
+        Returns:
+            True when the matching track has met validation requirements.
+        """
 
         current_time = time.perf_counter()
 
@@ -111,9 +132,18 @@ class LongTermValidator:
         return False
 
     def update(self):
+        """Remove tracks that have expired under current validation settings."""
         self._cleanup(time.perf_counter())
 
     def _find_track(self, qr_code: QR_Code) -> QRTrack | None:
+        """Find the best existing track overlapping a QR detection.
+
+        Args:
+            qr_code: QR detection to match against active tracks.
+
+        Returns:
+            Nearest matching track, preferring validated tracks, or None.
+        """
         matching_tracks: list[QRTrack] = []
 
         for track in self._tracks:
@@ -140,6 +170,15 @@ class LongTermValidator:
         )
 
     def _create_track(self, qr_code: QR_Code, current_time: float) -> QRTrack:
+        """Create an initial track for a new detection.
+
+        Args:
+            qr_code: QR detection that starts the track.
+            current_time: Monotonic creation timestamp.
+
+        Returns:
+            Newly initialized QR track.
+        """
         return QRTrack(
             center_x=qr_code.center_x,
             center_y=qr_code.center_y,
@@ -150,6 +189,11 @@ class LongTermValidator:
         )
 
     def _cleanup(self, current_time: float):
+        """Discard expired validated and unvalidated tracks.
+
+        Args:
+            current_time: Monotonic timestamp used for expiry checks.
+        """
         self._tracks = [
             track
             for track in self._tracks
@@ -164,6 +208,11 @@ class LongTermValidator:
         ]
 
     def _remove_overlapping_invalid_tracks(self, valid_track: QRTrack):
+        """Remove invalid tracks whose regions overlap a validated track.
+
+        Args:
+            valid_track: Validated track whose region takes precedence.
+        """
         self._tracks = [
             track
             for track in self._tracks
@@ -173,6 +222,15 @@ class LongTermValidator:
         ]
 
     def _tracks_overlap(self, first: QRTrack, second: QRTrack) -> bool:
+        """Check whether two circular tracking regions intersect.
+
+        Args:
+            first: First tracking region.
+            second: Second tracking region.
+
+        Returns:
+            True when the regions overlap or touch.
+        """
         distance = math.hypot(
             first.center_x - second.center_x,
             first.center_y - second.center_y,
@@ -181,6 +239,14 @@ class LongTermValidator:
         return distance <= first.radius + second.radius
 
     def _calc_radius(self, size: float):
+        """Calculate tracking radius from QR side length.
+
+        Args:
+            size: Average QR side length in pixels.
+
+        Returns:
+            Tracking radius scaled by the configured distance multiplier.
+        """
         # return settings.calibration_value / distance_cm / 2 * settings.long_term_validation_settings.dist_mult; same as:
         return size / 2 * settings.long_term_validation_settings.dist_mult
 

@@ -11,6 +11,7 @@ from utils.models import AlphaColor, Color, Padding, MouseData
 
 @dataclass(slots=True)
 class ButtonStyle:
+    """Colors, typography, and spacing used to draw a button."""
     color: Color = Color(220, 220, 220)
     background_color: AlphaColor = AlphaColor(0, 0, 0, 1.0)
     hoverd_color: Color | None = None
@@ -22,7 +23,18 @@ class ButtonStyle:
     fontThickness: int = 1
 
 class Button(Element):
+    """Clickable text button with hover and pressed visual states."""
+
     def __init__(self, x: int, y: int, text: str, callback: Callable[[], None], style: ButtonStyle = ButtonStyle()):
+        """Create a button.
+
+        Args:
+            x: Left edge, or right offset when negative.
+            y: Top edge, or bottom offset when negative.
+            text: Label to draw.
+            callback: Function called after a click completes over the button.
+            style: Colors, padding, and font settings.
+        """
         super().__init__()
         self._original_x = 0
         self._original_y = 0
@@ -42,6 +54,7 @@ class Button(Element):
         self.set_position(x, y)
         
     def _calculate_text_size(self):
+        """Measure the label using the current font style."""
         (self._text_width, self._text_height), _ = cv2.getTextSize(
             self._text,
             cv2.FONT_HERSHEY_SIMPLEX,
@@ -50,6 +63,12 @@ class Button(Element):
         )
 
     def set_text(self, text: str, style: ButtonStyle | None = None):
+        """Update the label and optionally replace its style.
+
+        Args:
+            text: New label to draw.
+            style: Replacement style; the current style is retained when omitted.
+        """
         if style is None:
             style = self._style
 
@@ -60,6 +79,12 @@ class Button(Element):
         self.set_position()
 
     def set_position(self, x: int | None = None, y: int | None = None):
+        """Update the button's source position and resolve it against the frame.
+
+        Args:
+            x: New left edge, or right offset when negative.
+            y: New top edge, or bottom offset when negative.
+        """
         if x is not None:
             self._original_x = x
         if y is not None:
@@ -71,16 +96,27 @@ class Button(Element):
             self._request_layout()
 
     def set_style(self, style: ButtonStyle):
+        """Replace the button style and recompute its layout.
+
+        Args:
+            style: Colors, padding, and font settings to apply.
+        """
         self._style = style
 
         self._calculate_text_size()
         self.set_position()
     
     def set_new_frame_size(self, frame):
+        """Update layout bounds and resolve the button position.
+
+        Args:
+            frame: OpenCV image whose dimensions define layout bounds.
+        """
         super().set_new_frame_size(frame)
         self.set_position()
 
     def _resolve_position(self):
+        """Resolve source coordinates into the current button bounds."""
         self._x1 = self._original_x
         self._y1 = self._original_y
         
@@ -94,6 +130,11 @@ class Button(Element):
         self._y2 = self._y1 + self._text_height + self._style.padding.vertical
     
     def _handle_mouse(self, mouse: MouseData):
+        """Update button interaction state and invoke its callback on click.
+
+        Args:
+            mouse: Event type and pointer coordinates to process.
+        """
         self.is_hovered = is_mouse_in_bounding_box(mouse, self._x1, self._y1, self._x2, self._y2)
 
         if mouse.event == cv2.EVENT_LBUTTONDOWN or mouse.event == cv2.EVENT_LBUTTONDBLCLK:
@@ -107,6 +148,11 @@ class Button(Element):
             self.is_pressed = False
     
     def _render(self, frame):
+        """Draw the button using its current interaction state.
+
+        Args:
+            frame: OpenCV image that receives the button drawing.
+        """
         color = self._style.color
         background_color = self._style.background_color
 
@@ -126,6 +172,11 @@ class Button(Element):
         cv2.putText(frame, self._text, (self._x1 + self._style.padding.left, self._y1 + self._text_height + self._style.padding.top), cv2.FONT_HERSHEY_SIMPLEX, self._style.fontSize, color, self._style.fontThickness)
     
     def _debug_render(self, frame):
+        """Draw the button's resolved corner markers.
+
+        Args:
+            frame: OpenCV image that receives the debug drawing.
+        """
         cv2.circle(frame, (self._x1, self._y1), 3, (0, 0, 255))
         cv2.circle(frame, (self._x1, self._y1), 12, (0, 0, 255))
         cv2.circle(frame, (self._x2, self._y2), 3, (255, 0, 0))

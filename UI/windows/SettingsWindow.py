@@ -12,11 +12,20 @@ if TYPE_CHECKING:
     from UI.windows.WindowController import WindowController
 
 class SettingsWindow(Window):
+    """Menu window for debug rendering and secondary settings windows."""
+
     def __init__(self, window_controller: WindowController, window_name="Settings"):
+        """Create the settings-menu window.
+
+        Args:
+            window_controller: Controller that owns this window.
+            window_name: OpenCV title and controller lookup key.
+        """
         super().__init__(window_controller, window_name)
         self._base_frame = create_blank_frame(600, 600)
     
     def _setup(self):
+        """Create debug and settings-window toggle buttons."""
         # === UI variables ===
         self._debug_button_state = False
         
@@ -31,6 +40,12 @@ class SettingsWindow(Window):
         self._root.add(self._camera_button)
     
     def _render(self, camera_frame, scan_result: ScanResult):
+        """Render the current settings menu state.
+
+        Args:
+            camera_frame: Unused camera image supplied by the window lifecycle.
+            scan_result: Unused QR result supplied by the window lifecycle.
+        """
         frame = self._base_frame.copy()
         
         self._debug_button_update()
@@ -41,6 +56,7 @@ class SettingsWindow(Window):
         cv2.imshow(self.window_name, frame)
     
     def _debug_button_update(self):
+        """Reflect debug-overlay visibility in the debug toggle label."""
         self._debug_button.set_text(
             f"{"Hide" if self._debug_button_state else "Show"} debug renders",
             ButtonStyle(
@@ -50,12 +66,14 @@ class SettingsWindow(Window):
         )
     
     def _debug_button_callback(self):
+        """Toggle debug overlays for every registered window."""
         self._debug_button_state = not self._debug_button_state
         logger.debug(f"{"Showing" if self._debug_button_state else "Hid"} debug renders")
         for window in self.controller.windows.values():
             window._root.set_debug_render(self._debug_button_state)
     
     def _validation_button_update(self):
+        """Reflect the validation-settings window state in its button."""
         is_validation_settings_enabled = self.controller.windows["Validation Settings"].is_enabled
         self._validation_button.set_text(
             f"{"Close" if is_validation_settings_enabled else "Open"} validation settings",
@@ -66,10 +84,12 @@ class SettingsWindow(Window):
         ) 
     
     def _validation_button_callback(self):
+        """Toggle the validation-settings window."""
         validationSettingsWindow = self.controller.windows["Validation Settings"]
         validationSettingsWindow.set_enabled(not validationSettingsWindow.is_enabled)
         
     def _camera_button_update(self):
+        """Reflect the camera-settings window state in its button."""
         is_camera_settings_enabled = self.controller.windows["Camera Settings"].is_enabled
         self._camera_button.set_text(
             f"{"Close" if is_camera_settings_enabled else "Open"} camera settings",
@@ -80,6 +100,7 @@ class SettingsWindow(Window):
         ) 
     
     def _camera_button_callback(self):
+        """Toggle the camera-settings window."""
         cameraSettingsWindow = self.controller.windows["Camera Settings"]
         cameraSettingsWindow.set_enabled(not cameraSettingsWindow.is_enabled)
 

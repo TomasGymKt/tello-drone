@@ -9,10 +9,22 @@ from .base import Scanner as BaseScanner
 
 detector = cv2.QRCodeDetector()
 def cv2_QR_scan(frame, try_decode=True) -> QR_Code | None:
+    """Detect and optionally decode a QR code using OpenCV.
+
+    Args:
+        frame: Image to scan.
+        try_decode: Whether to decode payload text after detection.
+
+    Returns:
+        Detected QR code, or None when no code is found.
+
+    Raises:
+        ScanningError: If OpenCV detection raises an exception.
+    """
     try:
         success, points = detector.detect(frame)
     except Exception as e:
-        logger.error(f"cv2 QR code DETECTION threw an error{C.FG_RED}", e)
+        logger.error(f"cv2 QR code DETECTION threw an error{C.RED}", e)
         print(C.RESET)
         raise ScanningError("cv2", e)
 
@@ -25,7 +37,7 @@ def cv2_QR_scan(frame, try_decode=True) -> QR_Code | None:
         try:
             text, _ = detector.decode(frame, points)
         except Exception as e:
-            logger.error(f"cv2 QR code DECODE threw an error{C.FG_RED}", e)
+            logger.error(f"cv2 QR code DECODE threw an error{C.RED}", e)
             print(C.RESET)
     if not text:
         text = None
@@ -37,7 +49,16 @@ def cv2_QR_scan(frame, try_decode=True) -> QR_Code | None:
 
 
 class Scanner(BaseScanner):
+    """OpenCV QR-code scanner backend."""
     method = ScanMethod.CV2
 
     def scan(self, frame) -> QR_Code | None:
+        """Scan an image with OpenCV's QR detector.
+
+        Args:
+            frame: Image to scan.
+
+        Returns:
+            Detected QR code, or None when no code is found.
+        """
         return cv2_QR_scan(frame, try_decode=True)

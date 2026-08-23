@@ -15,11 +15,20 @@ if TYPE_CHECKING:
 
 
 class ValidationSettingsWindow(Window):
+    """Configuration window for QR geometry and long-term validation rules."""
+
     def __init__(self, window_controller: WindowController, window_name="Validation Settings"):
+        """Create the validation-settings window.
+
+        Args:
+            window_controller: Controller that owns this window.
+            window_name: OpenCV title and controller lookup key.
+        """
         super().__init__(window_controller, window_name)
         self._base_frame = create_blank_frame(650, 685)
     
     def _setup(self):
+        """Create validation metrics, preset controls, and threshold sliders."""
         # === UI variables ===
         self._preset_name = settings.validation_preset
         self._all_presets = shared.get_validation_presets()
@@ -125,6 +134,12 @@ class ValidationSettingsWindow(Window):
         self._root.add(self._dist_mult_value_text)  
     
     def _render(self, camera_frame, scan_result):
+        """Render current measurements, preset limits, and validation controls.
+
+        Args:
+            camera_frame: Unused camera image supplied by the window lifecycle.
+            scan_result: Latest QR result used to update geometric measurements.
+        """
         frame = self._base_frame.copy()
         
         self._preset_name = settings.validation_preset
@@ -145,6 +160,11 @@ class ValidationSettingsWindow(Window):
         cv2.imshow(self.window_name, frame)
     
     def _current_values_update(self, qr_code: QR_Code):
+        """Calculate and display geometry metrics for a detected QR code.
+
+        Args:
+            qr_code: Detected QR code whose corner geometry is evaluated.
+        """
         points = qr_code.points
         
         top_left = points.top_left
@@ -221,6 +241,7 @@ class ValidationSettingsWindow(Window):
             )
     
     def _limit_texts_update(self):
+        """Display threshold values for the selected validation preset."""
         preset = self._all_presets[self._preset_name]
         
         self._limit_min_side_text.set_text(
@@ -246,6 +267,7 @@ class ValidationSettingsWindow(Window):
         )
     
     def _sliders_update(self):
+        """Synchronize threshold sliders with the selected preset and editability."""
         enabled = self._preset_name == "custom"
         self._sliders_container.enabled = enabled
         
@@ -266,6 +288,11 @@ class ValidationSettingsWindow(Window):
         self._limit_corner_dot_slider.set_value(preset.min_corner_dot)
     
     def _sliders_callback(self, value: float):
+        """Persist custom threshold values after a slider change.
+
+        Args:
+            value: Changed slider value; values are read from all threshold sliders.
+        """
         if self._preset_name != "custom":
             return
         new_preset = ValidationPreset(
@@ -281,6 +308,14 @@ class ValidationSettingsWindow(Window):
         self._all_presets = shared.get_validation_presets()
     
     def _picker_radio_setup(self, start_x: int=7, start_y: int=330, end_x: int=685, gap: int=5):
+        """Create wrapped radio options for available validation presets.
+
+        Args:
+            start_x: Left edge of the first preset option.
+            start_y: Top edge of the first preset option.
+            end_x: Rightmost x-coordinate before wrapping to a new row.
+            gap: Pixel gap between adjacent options.
+        """
         x = start_x
         y = start_y
         for preset_name in self._all_presets.keys():
@@ -297,17 +332,42 @@ class ValidationSettingsWindow(Window):
             self._picker_radio.add(radio)
     
     def _picker_radio_callback(self, value: object):
+        """Select a validation preset.
+
+        Args:
+            value: Name of the selected preset.
+        """
         settings.validation_preset = value
 
     def _period_callback(self, value: float):
+        """Store the long-term validation period.
+
+        Args:
+            value: Requested period in seconds.
+        """
         settings.long_term_validation_settings.period = round(value, 2)
     
     def _appearance_callback(self, value: float):
+        """Store the minimum long-term validation appearance count.
+
+        Args:
+            value: Requested appearance count.
+        """
         settings.long_term_validation_settings.min_appearance = round(value, 0)
 
     def _gap_time_callback(self, value: float):
+        """Store the maximum gap allowed between appearances.
+
+        Args:
+            value: Requested maximum gap time in seconds.
+        """
         settings.long_term_validation_settings.max_gap_time = round(value, 2)
 
     def _dist_mult_callback(self, value: float):
+        """Store the long-term validation distance multiplier.
+
+        Args:
+            value: Requested distance multiplier.
+        """
         settings.long_term_validation_settings.dist_mult = round(value, 2)
 

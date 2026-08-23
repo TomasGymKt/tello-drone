@@ -16,6 +16,7 @@ SCANNERS: dict[str, Scanner] = {}
 
 
 def _load_scanners() -> None:
+    """Discover scanner modules and register their Scanner implementations."""
     package_dir = Path(__file__).resolve().parent
 
     for module_info in pkgutil.iter_modules([str(package_dir)]):
@@ -39,16 +40,36 @@ def _load_scanners() -> None:
 
 
 def get_scanner(method: str) -> Scanner:
+    """Return a registered scanner backend.
+
+    Args:
+        method: Registered scanner method identifier.
+
+    Returns:
+        Scanner instance for the requested method.
+
+    Raises:
+        KeyError: If no scanner is registered for the method.
+    """
     return SCANNERS[method]
 
 
 def scan_with(method: str, frame):
+    """Scan a frame with one backend while containing scanner failures.
+
+    Args:
+        method: Registered scanner method identifier.
+        frame: Image to scan.
+
+    Returns:
+        Detected QR code, or None when scanning fails or finds nothing.
+    """
     try:
         return get_scanner(method).scan(frame)
     except ScanningError:
         return None
     except Exception as e:
-        logger.error(f"Unknown error while scanning with {method}:{C.FG_RED}", e)
+        logger.error(f"Unknown error while scanning with {method}:{C.RED}", e)
         print(C.RESET)
         return None
 

@@ -74,6 +74,11 @@ def main(tello: Tello):
 
 
 def handle_program_exit(tello: Tello):
+    """Close windows and repeatedly finalize the drone connection.
+
+    Args:
+        tello: Drone instance whose resources should be released.
+    """
     # TODO: Is this enough to PROPERLY stop?
 
     logger.info("Exiting program...")
@@ -90,9 +95,9 @@ def handle_program_exit(tello: Tello):
 if __name__ == "__main__":
     logger.success(f"{C.BOLD}Starting program...{C.RESET}")
     if settings.debug:
-        logger.info(f"{C.FG_YELLOW}Running in {C.BOLD}DEBUG MODE{C.RESET}{C.FG_YELLOW}!{C.RESET}")
+        logger.info(f"{C.YELLOW}Running in {C.BOLD}DEBUG MODE{C.RESET}{C.YELLOW}!{C.RESET}")
     if settings.is_emulator:
-        logger.info(f"{C.FG_YELLOW}Running on {C.BOLD}EMULATOR{C.RESET}{C.FG_YELLOW}!{C.RESET}")
+        logger.info(f"{C.YELLOW}Running on {C.BOLD}EMULATOR{C.RESET}{C.YELLOW}!{C.RESET}")
 
     tello = Tello(host=settings.ip_address)
 
@@ -101,10 +106,10 @@ if __name__ == "__main__":
         handle_program_exit(tello)
 
     except KeyboardInterrupt:
-        logger.info(f"Keyboard interruped - {C.FG_BRIGHT_RED}STOPPING{C.RESET}")
+        logger.info(f"Keyboard interruped - {C.BRIGHT_RED}STOPPING{C.RESET}")
     
     except ConnectionError as err:
-        logger.fatal(f"{C.FG_BRIGHT_RED}Faild to connect{C.RESET} to Tello\n{err.msg}")
+        logger.fatal(f"{C.BRIGHT_RED}Faild to connect{C.RESET} to Tello\n{err.msg}")
     
     except Exception as e:
         if settings.debug:

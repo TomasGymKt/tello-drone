@@ -5,7 +5,17 @@ from utils.models import Color, ScanResult
 
 
 class PerformanceDisplay:
+    """Collect scan and draw performance metrics and expose them as UI text."""
+
     def __init__(self, refresh_period=0.2, scan_fps_period=10.0, scan_time_period=10.0, draw_fps_period=10.0):
+        """Create a metrics display and its UI container.
+
+        Args:
+            refresh_period: Minimum interval between text refreshes in seconds.
+            scan_fps_period: Reset interval for scan FPS min/max values.
+            scan_time_period: Reset interval for scan-time min/max values.
+            draw_fps_period: Reset interval for draw FPS min/max values.
+        """
         self.refresh_period = refresh_period
         self.scan_fps_period = scan_fps_period
         self.scan_time_period = scan_time_period
@@ -45,6 +55,11 @@ class PerformanceDisplay:
         self.minmax_draw_fps_Text: Text  = self._ui_container.add(Text(120, -7, self._minmax_draw_fps_text , TextStyle(Color(0, 255, 0), fontSize=0.35)))
 
     def _update_draw_fps(self, current_time: float):
+        """Update smoothed and min/max draw FPS measurements.
+
+        Args:
+            current_time: Monotonic timestamp of the current draw frame.
+        """
         if self._last_draw_frame_at is not None:
             frame_dt = current_time - self._last_draw_frame_at
             if frame_dt > 0:
@@ -64,6 +79,11 @@ class PerformanceDisplay:
         self._last_draw_frame_at = current_time
     
     def _update_scan_fps(self, last_scan_finished_at: float | None):
+        """Update smoothed and min/max scan FPS after a completed scan.
+
+        Args:
+            last_scan_finished_at: Monotonic timestamp of the latest completed scan.
+        """
         if last_scan_finished_at is not None and last_scan_finished_at != self._last_scan_finished_at:
             if self._last_scan_finished_at is not None:
                 scan_dt = last_scan_finished_at - self._last_scan_finished_at
@@ -84,6 +104,12 @@ class PerformanceDisplay:
             self._last_scan_finished_at = last_scan_finished_at
     
     def _update_minmax(self, current_time: float, last_scan_ms: float | None):
+        """Update scan-time extrema and reset expired metric windows.
+
+        Args:
+            current_time: Monotonic timestamp used for reset checks.
+            last_scan_ms: Duration of the latest scan, if available.
+        """
         if last_scan_ms is not None:
             if self._min_scan_time is None or last_scan_ms < self._min_scan_time:
                 self._min_scan_time = last_scan_ms
@@ -107,6 +133,12 @@ class PerformanceDisplay:
             self._draw_fps_stats_started_at = current_time
     
     def _update_text(self, current_time: float, last_scan_ms: float | None):
+        """Format metric values into display text at the refresh interval.
+
+        Args:
+            current_time: Monotonic timestamp used for refresh checks.
+            last_scan_ms: Duration of the latest scan, if available.
+        """
         if current_time - self._last_refresh_at >= self.refresh_period:
             scan_fps_text = "--.-"  if self._latest_scan_fps is None else f"{self._latest_scan_fps:.1f}"
             scan_time_text = "--.-" if last_scan_ms is None else f"{last_scan_ms:.1f}"
@@ -130,6 +162,11 @@ class PerformanceDisplay:
             self._last_refresh_at = current_time
 
     def update(self, scan_result: ScanResult):
+        """Incorporate a scan result and update all metric labels.
+
+        Args:
+            scan_result: Latest scan result containing completion timing.
+        """
         current_time = time.perf_counter()
         
         self._update_draw_fps(current_time)
@@ -147,5 +184,10 @@ class PerformanceDisplay:
     
     @property
     def container(self):
+        """Return the UI container displaying performance metrics.
+
+        Returns:
+            Container with the performance text elements.
+        """
         return self._ui_container
     

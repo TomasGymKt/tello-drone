@@ -13,11 +13,20 @@ if TYPE_CHECKING:
     from UI.windows.WindowController import WindowController
 
 class CameraSettingsWindow(Window):
+    """Configuration window for camera focal length and QR physical size."""
+
     def __init__(self, window_controller: WindowController, window_name="Camera Settings"):
+        """Create the camera-settings window.
+
+        Args:
+            window_controller: Controller that owns this window.
+            window_name: OpenCV title and controller lookup key.
+        """
         super().__init__(window_controller, window_name)
         self._base_frame = create_blank_frame(600, 600)
     
     def _setup(self):
+        """Create focal-length and QR-size controls."""
         # === UI variables ===
         
         # === UI elements ===
@@ -41,6 +50,12 @@ class CameraSettingsWindow(Window):
         self._root.add(self._qr_value_text)
 
     def _render(self, camera_frame, scan_result: ScanResult):
+        """Render the settings controls on the fixed-size configuration frame.
+
+        Args:
+            camera_frame: Unused camera image supplied by the window lifecycle.
+            scan_result: Unused QR result supplied by the window lifecycle.
+        """
         frame = self._base_frame.copy()
         
         self._focal_value_text.set_text(f"{settings.camera_focal_length:.0f}")
@@ -50,8 +65,18 @@ class CameraSettingsWindow(Window):
         cv2.imshow(self.window_name, frame)
     
     def _focal_callback(self, value: float):
+        """Store a new camera focal length.
+
+        Args:
+            value: Slider-selected focal length.
+        """
         settings.camera_focal_length = round(value)
 
     def _qr_callback(self, value: float):
+        """Store a new physical QR-code size.
+
+        Args:
+            value: Slider-selected QR size in centimeters.
+        """
         settings.qr_code_size_cm = round(value, 1)
 

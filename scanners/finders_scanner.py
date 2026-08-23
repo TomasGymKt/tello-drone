@@ -10,6 +10,14 @@ count = 0
 off = 16
 
 def get_contours(frame) -> QR_Code | None:
+    """Generate contour debug frames for experimental QR detection.
+
+    Args:
+        frame: Image to threshold and inspect.
+
+    Returns:
+        None; this scanner currently only publishes debug output.
+    """
     global number, count
     if count >= 20:
         count = 0
@@ -89,8 +97,17 @@ def get_contours(frame) -> QR_Code | None:
 
 
 class Scanner(BaseScanner):
+    """Experimental contour-based scanner backend."""
     method = ScanMethod.CONTOURS
 
     def scan(self, frame) -> QR_Code | None:
+        """Run the contour debug scan.
+
+        Args:
+            frame: Image to scan.
+
+        Returns:
+            None because contour detection is not implemented yet.
+        """
         return get_contours(frame)
 

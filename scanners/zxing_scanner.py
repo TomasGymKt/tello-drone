@@ -7,6 +7,15 @@ from .base import Scanner as BaseScanner
 
 
 def zxing_QR_scan(frame, scale: int=1) -> QR_Code | None:
+    """Scan a resized grayscale frame using ZXing.
+
+    Args:
+        frame: Image to scan.
+        scale: Downscale factor trading readability for scan speed.
+
+    Returns:
+        First detected QR code, or None when no code is found.
+    """
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) # Convert to grayscale
     small = cv2.resize(gray, None, fx=1 / scale, fy=1 / scale) # Set resolution scale, for faster scaning at the cost of readability (distance)
     
@@ -34,7 +43,16 @@ def zxing_QR_scan(frame, scale: int=1) -> QR_Code | None:
 
 
 class Scanner(BaseScanner):
+    """ZXing QR-code scanner backend."""
     method = ScanMethod.ZXING
 
     def scan(self, frame) -> QR_Code | None:
+        """Scan an image with ZXing.
+
+        Args:
+            frame: Image to scan.
+
+        Returns:
+            Detected QR code, or None when no code is found.
+        """
         return zxing_QR_scan(frame)
