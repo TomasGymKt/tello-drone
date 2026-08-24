@@ -1,21 +1,25 @@
-from djitellopy import Tello, TelloException
+# djitellopy github: https://github.com/damiafuentes/DJITelloPy
+# official docs: https://dl-cdn.ryzerobotics.com/downloads/tello/20180910/Tello%20SDK%20Documentation%20EN_1.3.pdf
+# official docs (EDU?): https://dl-cdn.ryzerobotics.com/downloads/Tello/Tello%20SDK%202.0%20User%20Guide.pdf
+
+from djitellopy import TelloException
 import cv2
 import time
 
+from shared import tello, shared_qr
+
 from utils.Logger import logger
 from utils.errors import ConnectionError
-from utils.common import start_periodic_stats_log, check_wifi
+from utils.common import PeriodicStatsLogger, check_wifi
 from utils.color import C
-from utils.models import SharedQR
 from utils.DebugFrames import debug_frames
 from utils.qr_validation import is_plausible_qr_code, longTermValidator
 from UI.windows import window_controller
 from settings import settings
-from ScanWorker import ScanWorker
-from fly import start_flying_thread
+from scanners.ScanWorker import ScanWorker
 
 
-def main(tello: Tello):
+def main():
 
     check_wifi()
 
@@ -24,7 +28,7 @@ def main(tello: Tello):
     except TelloException:
         raise ConnectionError("Failed to connect")
     logger.success(f"{C.BOLD}Connected to Tello{C.RESET}")
-    start_periodic_stats_log(tello)
+    periodic_stats = PeriodicStatsLogger()
 
     
     tello.streamon()
@@ -32,12 +36,12 @@ def main(tello: Tello):
     frame_reader = tello.get_frame_read()
 
 
-    shared_qr = SharedQR()
-    # start_flying_thread(tello, shared_qr)
+    
+    # start_flying_thread()
     scan_worker = ScanWorker()
     
 
-    time.sleep(1)
+    time.sleep(0.5)
 
     logger.info(f"{C.BOLD}Initialization complete{C.RESET}")
     try:
@@ -69,26 +73,30 @@ def main(tello: Tello):
             if cv2.waitKey(1) & 0xFF == ord("q"):
                 break
     finally:
+        periodic_stats.stop()
+        # TODO: fly_thread.stop()
         scan_worker.stop()
         cv2.destroyAllWindows()
 
 
-def handle_program_exit(tello: Tello):
-    """Close windows and repeatedly finalize the drone connection.
-
-    Args:
-        tello: Drone instance whose resources should be released.
-    """
+def handle_program_exit():
+    """Close windows and finalize the drone connection."""
     # TODO: Is this enough to PROPERLY stop?
 
     logger.info("Exiting program...")
-    cv2.destroyAllWindows()
-    while True: # If you spam Ctrl+C, it exits early
+    tello.send_rc_control(0, 0, 0, 0) # Stop moving
+    tries = 4
+    for i in range(tries): # If you spam Ctrl+C, it exits early
         try:
             tello.end() # and this doesn't finish
             break
         except KeyboardInterrupt:
-            logger.info(f"Don't spam Ctrl+C, it is {C.BOLD}already stoping{C.RESET} the drone")
+            if i + 1 == tries:
+                logger.warn("Exited without waiting for end() to finish.")
+            else:
+                logger.info(f"Don't spam Ctrl+C, the drone is {C.BOLD}already stoping{C.RESET}. Spam limit: {i+1}/{tries-1}")
+
+    cv2.destroyAllWindows()
     logger.success(f"{C.BOLD}Successfuly exited program{C.RESET}")
 
 
@@ -99,11 +107,8 @@ if __name__ == "__main__":
     if settings.is_emulator:
         logger.info(f"{C.YELLOW}Running on {C.BOLD}EMULATOR{C.RESET}{C.YELLOW}!{C.RESET}")
 
-    tello = Tello(host=settings.ip_address)
-
     try:
-        main(tello)
-        handle_program_exit(tello)
+        main()
 
     except KeyboardInterrupt:
         logger.info(f"Keyboard interruped - {C.BRIGHT_RED}STOPPING{C.RESET}")
@@ -117,6 +122,6 @@ if __name__ == "__main__":
         logger.error("Unknow error:", e)
     
     finally:
-        handle_program_exit(tello)
+        handle_program_exit()
     
     

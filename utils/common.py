@@ -3,12 +3,13 @@ from collections import deque
 from functools import wraps
 import subprocess
 import cv2
-from djitellopy import Tello
 import threading
 import time
 from typing import TYPE_CHECKING
-
 import numpy as np
+
+from shared import tello
+
 from utils.Logger import logger
 from utils.errors import ConnectionError
 from utils.color import C, colorful_battery, colorful_temperature
@@ -18,37 +19,40 @@ if TYPE_CHECKING:
     from UI.elements.Element import Element
 
 
-def _log_stats(tello: Tello, period: int):
-    """Continuously log battery and temperature information.
+class PeriodicStatsLogger:
+    """Periodically logs drone telemetry in a background thread.
+
+    The logger runs as a daemon thread.
 
     Args:
-        tello: Connected drone used to read telemetry.
         period: Delay between telemetry logs in seconds.
     """
-    
-    while True:
-        logger.info(
-            "Battery: {}        Temps: {}, {}"
-            .format(
-                colorful_battery(tello.get_battery()),
-                colorful_temperature(tello.get_lowest_temperature()),
-                colorful_temperature(tello.get_highest_temperature())
+
+    def __init__(self, period: float = 10):
+        self._period = period
+        self._stop_event = threading.Event()
+
+        self._thread = threading.Thread(target=self._run, daemon=True)
+        self._thread.start()
+
+    def stop(self) -> None:
+        """Stop periodic telemetry logging."""
+        self._stop_event.set()
+        self._thread.join()
+
+    def _run(self) -> None:
+        """Run the telemetry logging loop."""
+        while not self._stop_event.is_set():
+            logger.info(
+                "Battery: {}        Temps: {}, {}"
+                .format(
+                    colorful_battery(tello.get_battery()),
+                    colorful_temperature(tello.get_lowest_temperature()),
+                    colorful_temperature(tello.get_highest_temperature())
+                )
             )
-        )
-        time.sleep(period)
 
-def start_periodic_stats_log(tello: Tello, period: int=10) -> None:
-    """Start a daemon thread that logs drone telemetry periodically.
-
-    Args:
-        tello: Connected drone used to read telemetry.
-        period: Delay between telemetry logs in seconds.
-    """
-    
-    thread = threading.Thread(target=_log_stats, args=(tello, period), daemon=True)
-    thread.start()
-
-
+            self._stop_event.wait(self._period)
 
 def get_wifi_connection() -> str | None:
     """Return the active physical Wi-Fi profile name.
@@ -109,7 +113,7 @@ def create_blank_frame(width: int, height: int, color: tuple[int, int, int] = (2
         New uint8 OpenCV image filled with color.
     """
     
-    frame = np.full((width, height, 3), color, dtype=np.uint8)
+    frame = np.full((height, width, 3), color, dtype=np.uint8)
     return frame
 
 

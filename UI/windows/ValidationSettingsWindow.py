@@ -25,7 +25,7 @@ class ValidationSettingsWindow(Window):
             window_name: OpenCV title and controller lookup key.
         """
         super().__init__(window_controller, window_name)
-        self._base_frame = create_blank_frame(650, 685)
+        self._base_frame = create_blank_frame(685, 650)
     
     def _setup(self):
         """Create validation metrics, preset controls, and threshold sliders."""

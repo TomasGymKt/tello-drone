@@ -33,11 +33,15 @@ class SettingsWindow(Window):
         self._debug_button = Button(7, 7, "---- debug render", self._debug_button_callback)
         self._validation_button = Button(7, 33, "---- validation settings", self._validation_button_callback)
         self._camera_button = Button(7, 59, "---- camera settings", self._camera_button_callback)
+        self._fly_button = Button(7, 85, "---- fly contols", self._fly_button_callback)
+        self._drone_button = Button(7, 111, "---- drone settings", self._drone_button_callback)
         
         # === Add elements to root ===
         self._root.add(self._debug_button)
         self._root.add(self._validation_button)
         self._root.add(self._camera_button)
+        self._root.add(self._fly_button)
+        self._root.add(self._drone_button)
     
     def _render(self, camera_frame, scan_result: ScanResult):
         """Render the current settings menu state.
@@ -51,9 +55,25 @@ class SettingsWindow(Window):
         self._debug_button_update()
         self._validation_button_update()
         self._camera_button_update()
+        self._fly_button_update()
+        self._drone_button_update()
         
         self._root.render(frame)
         cv2.imshow(self.window_name, frame)
+    
+    def _toggle_window(self, window_name: str):
+        window = self.controller.windows[window_name]
+        window.set_enabled(not window.is_enabled)
+    
+    def _update_button(self, window_name: str, button: Button, text: str):
+        is_window_enabled = self.controller.windows[window_name].is_enabled
+        button.set_text(
+            f"{"Close" if is_window_enabled else "Open"} {text}",
+            ButtonStyle(
+                color=(Color(255, 255, 255) if is_window_enabled else Color(0, 0, 0)),
+                background_color=(AlphaColor(55, 65, 65) if is_window_enabled else AlphaColor(215, 211, 209))
+            )
+        ) 
     
     def _debug_button_update(self):
         """Reflect debug-overlay visibility in the debug toggle label."""
@@ -74,34 +94,36 @@ class SettingsWindow(Window):
     
     def _validation_button_update(self):
         """Reflect the validation-settings window state in its button."""
-        is_validation_settings_enabled = self.controller.windows["Validation Settings"].is_enabled
-        self._validation_button.set_text(
-            f"{"Close" if is_validation_settings_enabled else "Open"} validation settings",
-            ButtonStyle(
-                color=(Color(255, 255, 255) if is_validation_settings_enabled else Color(0, 0, 0)),
-                background_color=(AlphaColor(55, 65, 65) if is_validation_settings_enabled else AlphaColor(215, 211, 209))
-            )
-        ) 
+        self._update_button("Validation Settings", self._validation_button, "validation settings")
     
     def _validation_button_callback(self):
         """Toggle the validation-settings window."""
-        validationSettingsWindow = self.controller.windows["Validation Settings"]
-        validationSettingsWindow.set_enabled(not validationSettingsWindow.is_enabled)
+        self._toggle_window("Validation Settings")
         
     def _camera_button_update(self):
         """Reflect the camera-settings window state in its button."""
-        is_camera_settings_enabled = self.controller.windows["Camera Settings"].is_enabled
-        self._camera_button.set_text(
-            f"{"Close" if is_camera_settings_enabled else "Open"} camera settings",
-            ButtonStyle(
-                color=(Color(255, 255, 255) if is_camera_settings_enabled else Color(0, 0, 0)),
-                background_color=(AlphaColor(55, 65, 65) if is_camera_settings_enabled else AlphaColor(215, 211, 209))
-            )
-        ) 
+        self._update_button("Camera Settings", self._camera_button, "camera settings")
     
     def _camera_button_callback(self):
         """Toggle the camera-settings window."""
-        cameraSettingsWindow = self.controller.windows["Camera Settings"]
-        cameraSettingsWindow.set_enabled(not cameraSettingsWindow.is_enabled)
+        self._toggle_window("Camera Settings")
+        
+    def _fly_button_update(self):
+        """Reflect the fly-controls window state in its button."""
+        self._update_button("Fly Controls", self._fly_button, "fly controls")
+    
+    def _fly_button_callback(self):
+        """Toggle the fly-controls window."""
+        self._toggle_window("Fly Controls")
+        
+    def _drone_button_update(self):
+        """Reflect the drone window state in its button."""
+        self._update_button("Drone Settings", self._drone_button, "drone settings")
+    
+    def _drone_button_callback(self):
+        """Toggle the drone window."""
+        self._toggle_window("Drone Settings")
+    
+    
 
 

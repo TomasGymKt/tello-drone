@@ -2,6 +2,8 @@ from UI.windows.CameraWindow import CameraWindow
 from UI.windows.SettingsWindow import SettingsWindow
 from UI.windows.ValidationSettingsWindow import ValidationSettingsWindow
 from UI.windows.CameraSettingsWindow import CameraSettingsWindow
+from UI.windows.FlyControlsWindow import FlyControllsWindow
+from UI.windows.DroneWindows import DroneWindow
 from UI.windows.Window import Window
 from utils.models import ScanResult
 
@@ -16,6 +18,8 @@ class WindowController:
         self.add_window( SettingsWindow(self) )
         self.add_window( ValidationSettingsWindow(self) )
         self.add_window( CameraSettingsWindow(self) )
+        self.add_window( FlyControllsWindow(self) )
+        self.add_window( DroneWindow(self) )
     
     @property
     def windows(self):

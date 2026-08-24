@@ -182,6 +182,10 @@ class AlphaColor(Color):
 
         Args:
             *args: BGR tuple or channels, optionally followed by alpha.
+                - b, g, r
+                - (b, g, r)
+                - b, g, r, a
+                - (b, g, r), a
 
         Returns:
             Immutable BGR color carrying a separate alpha attribute.
