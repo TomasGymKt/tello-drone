@@ -17,7 +17,7 @@ from utils.qr_validation import is_plausible_qr_code, longTermValidator
 from UI.windows import window_controller
 from settings import settings
 from scanners.ScanWorker import ScanWorker
-from fly import FlyWorker
+from fly import fly_worker
 
 
 def main():
@@ -36,9 +36,6 @@ def main():
     
     frame_reader = tello.get_frame_read()
 
-
-    
-    fly_worker = FlyWorker()
     scan_worker = ScanWorker()
     
 
@@ -46,6 +43,7 @@ def main():
 
     logger.info(f"{C.BOLD}Initialization complete{C.RESET}")
     try:
+        # fly_worker.start()
         while True:
             frame = frame_reader.frame
             frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR) # Color correction
