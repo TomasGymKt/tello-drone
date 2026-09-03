@@ -30,6 +30,7 @@ class Settings:
 
     debug: bool = True
     is_emulator: bool = False
+    manual_control: bool = True
 
     # ===== Scanning =====
 

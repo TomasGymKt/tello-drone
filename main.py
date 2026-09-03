@@ -17,6 +17,7 @@ from utils.qr_validation import is_plausible_qr_code, longTermValidator
 from UI.windows import window_controller
 from settings import settings
 from scanners.ScanWorker import ScanWorker
+from fly import FlyWorker
 
 
 def main():
@@ -37,7 +38,7 @@ def main():
 
 
     
-    # start_flying_thread()
+    fly_worker = FlyWorker()
     scan_worker = ScanWorker()
     
 
@@ -74,7 +75,7 @@ def main():
                 break
     finally:
         periodic_stats.stop()
-        # TODO: fly_thread.stop()
+        fly_worker.stop()
         scan_worker.stop()
         cv2.destroyAllWindows()
 

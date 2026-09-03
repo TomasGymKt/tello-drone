@@ -55,46 +55,51 @@ def move_to_qr_code(error_x: int, error_y: int, distance_cm: float, SPEED: int=2
 
 def main_loop():
     """Continuously fly toward validated QR codes and react to their text.
-
-    Args:
-        shared_qr: Thread-safe source of the latest validated QR code.
     """
-    tello.takeoff()
 
-    while True:
-        qr = shared_qr.get()
 
-        if qr == None:
-            tello.send_rc_control(0, 0, 0, 0)    # zastav
-            continue
+    qr = shared_qr.get()
 
-        move_to_qr_code(tello, qr.error_xy.x, qr.error_xy.y, qr.distance_cm)
+    if qr == None:
+        tello.send_rc_control(0, 0, 0, 0)    # zastav
+        return
 
-        text = (qr.text or "").lower()
+    move_to_qr_code(tello, qr.error_xy.x, qr.error_xy.y, qr.distance_cm)
 
-        if qr.distance_cm < 60 and qr.distance_cm > 40:
-            if text == "vlevo":
-                tello.rotate_counter_clockwise(90)
-            elif text == "vpravo":
-                tello.rotate_clockwise(90)
-            elif text == "přistát":
-                tello.land()
-            else:
-                logger.error("Unknow QR Code message")
+    text = (qr.text or "").lower()
 
-        
+    if qr.distance_cm < 60 and qr.distance_cm > 40:
+        if text == "vlevo":
+            tello.rotate_counter_clockwise(90)
+        elif text == "vpravo":
+            tello.rotate_clockwise(90)
+        elif text == "přistát":
+            tello.land()
+        else:
+            logger.error("Unknow QR Code message")
 
 
 
-def start_flying_thread():
-    """
-    **TODO**: Make this into a class with a proper stop()
-    
-    Start the QR-guided flight loop in a daemon thread.
+class FlyWorker:
+    def __init__(self):
+        self._lock = threading.Lock()
+        self._condition = threading.Condition(self._lock)
+        self._is_running = True
 
-    Args:
-        shared_qr: Thread-safe source of validated QR codes.
-    """
-    # TODO: Make this into a class with a proper stop()
-    thread = threading.Thread(target=main_loop, daemon=True)
-    thread.start()
+        self._thread = threading.Thread(target=self._worker_loop, daemon=True)
+        self._thread.start()
+
+    def stop(self) -> None:
+        with self._condition:
+            self._is_running = False
+            self._condition.notify_all()
+
+        self._thread.join(timeout=1)
+
+    def _worker_loop(self) -> None:
+        while True:
+            with self._condition:
+                if not self._is_running:
+                    return
+
+                main_loop()
