@@ -1,3 +1,4 @@
+from __future__ import annotations
 import cv2
 from typing import TYPE_CHECKING
 

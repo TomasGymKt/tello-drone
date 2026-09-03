@@ -5,6 +5,21 @@ from typing import NamedTuple
 from enum import StrEnum
 from settings import settings
 
+
+class Int_Vector2(NamedTuple):
+    """Immutable two-dimensional integer coordinate."""
+    x: int
+    y: int
+
+
+class Corners(NamedTuple):
+    """Ordered QR-code corners: top-left, top-right, bottom-right, bottom-left."""
+    top_left: Int_Vector2
+    top_right: Int_Vector2
+    bottom_right: Int_Vector2
+    bottom_left: Int_Vector2
+
+
 def qr_size(points: Corners) -> float:
     """Calculate the average side length of a quadrilateral.
 
@@ -20,19 +35,6 @@ def qr_size(points: Corners) -> float:
     left = math.dist(points.bottom_left, points.top_left)
 
     return (top + right + bottom + left) / 4
-
-class Int_Vector2(NamedTuple):
-    """Immutable two-dimensional integer coordinate."""
-    x: int
-    y: int
-
-
-class Corners(NamedTuple):
-    """Ordered QR-code corners: top-left, top-right, bottom-right, bottom-left."""
-    top_left: Int_Vector2
-    top_right: Int_Vector2
-    bottom_right: Int_Vector2
-    bottom_left: Int_Vector2
 
 
 class QR_Code:
