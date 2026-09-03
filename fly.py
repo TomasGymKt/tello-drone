@@ -50,33 +50,7 @@ def move_to_qr_code(error_x: int, error_y: int, distance_cm: float, SPEED: int=2
     up_down,
     0
     )
-
-
-
-def main_loop():
-    """Continuously fly toward validated QR codes and react to their text.
-    """
-
-
-    qr = shared_qr.get()
-
-    if qr == None:
-        tello.send_rc_control(0, 0, 0, 0)    # zastav
-        return
-
-    move_to_qr_code(tello, qr.error_xy.x, qr.error_xy.y, qr.distance_cm)
-
-    text = (qr.text or "").lower()
-
-    if qr.distance_cm < 60 and qr.distance_cm > 40:
-        if text == "vlevo":
-            tello.rotate_counter_clockwise(90)
-        elif text == "vpravo":
-            tello.rotate_clockwise(90)
-        elif text == "přistát":
-            tello.land()
-        else:
-            logger.error("Unknow QR Code message")
+    
 
 
 
@@ -97,9 +71,29 @@ class FlyWorker:
         self._thread.join(timeout=1)
 
     def _worker_loop(self) -> None:
+        tello.takeoff()
+
         while True:
             with self._condition:
                 if not self._is_running:
                     return
 
-                main_loop()
+                qr = shared_qr.get()
+
+                if qr == None:
+                    tello.send_rc_control(0, 0, 0, 0)    # zastav
+                    continue
+
+                move_to_qr_code(tello, qr.error_xy.x, qr.error_xy.y, qr.distance_cm)
+
+                text = (qr.text or "").lower()
+
+                if qr.distance_cm < 60 and qr.distance_cm > 40:
+                    if text == "vlevo":
+                        tello.rotate_counter_clockwise(90)
+                    elif text == "vpravo":
+                        tello.rotate_clockwise(90)
+                    elif text == "přistát":
+                        tello.land()
+                    else:
+                        logger.error("Unknow QR Code message")
