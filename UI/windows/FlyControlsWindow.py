@@ -25,7 +25,7 @@ class FlyControllsWindow(Window):
             window_controller: Controller that owns this window.
             window_name: OpenCV title and controller lookup key.
         """
-        super().__init__(window_controller, window_name)
+        super().__init__(window_controller, window_name, enabled_by_default=True)
         self._base_frame = create_blank_frame(323, 205)
     
     def _setup(self):
@@ -37,7 +37,8 @@ class FlyControllsWindow(Window):
         self._start_hold_time = 0
         self._emergency_holding_time = 1.2
         
-        self._keep_alive_time = 0
+        self._keep_alive = False
+        self._last_keep_alive = 0
         self._keep_alive_limit = 13
         
         
@@ -89,9 +90,9 @@ class FlyControllsWindow(Window):
         self._control_update()
         self._emergency_update()
         
-        if time.perf_counter() - self._keep_alive_time >= self._keep_alive_limit:
-            self._keep_alive_time = time.perf_counter()
-            # tello.send_control_command("command")
+        if self._keep_alive and time.perf_counter() - self._last_keep_alive >= self._keep_alive_limit:
+            self._last_keep_alive = time.perf_counter()
+            # tello.send_control_command("command"), dont knowwhat this command does
             tello.send_rc_control(0, 0, 0, 0)
         
         self._root.render(frame)

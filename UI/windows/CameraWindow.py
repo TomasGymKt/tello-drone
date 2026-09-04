@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 from UI.elements import Container, Text, TextStyle, CenterCross, QRCodePloter, Button, Outline, ButtonStyle, Circle
 from UI.windows.Window import Window
 from settings import settings
+from fly import fly_worker
 from utils.PerformanceDisplay import PerformanceDisplay
 from utils.models import Color, AlphaColor, ScanResult
 from utils.Logger import logger
@@ -40,6 +41,8 @@ class CameraWindow(Window):
         self._found_text = Text(-7, 7, f"----------", TextStyle(Color(0, 0, 255)))
         self._settings_button = Button(-7, -7, "---- settings", self._settings_button_callback)
         self._ghost_qr_ploter = QRCodePloter()
+
+        self._fly_mode_button = Button(500, 7, "Fly!", self._fly_mode_button_callback)
         
         # === Add elements to root ===
         self._root.add(self._qr_ploter)
@@ -50,6 +53,8 @@ class CameraWindow(Window):
         self._root.add(self._ghost_qr_ploter)
         self._rejected_setup()
         self._validating_setup()
+
+        self._root.add(self._fly_mode_button)
     
     def _render(self, camera_frame, scan_result: ScanResult):
         """Draw the latest camera frame and QR validation overlays.
@@ -206,3 +211,6 @@ class CameraWindow(Window):
         """Toggle the settings window."""
         settingsWindow = self.controller.windows["Settings"]
         settingsWindow.set_enabled(not settingsWindow.is_enabled)
+    
+    def _fly_mode_button_callback(self):
+        fly_worker.set_manual_control(not fly_worker.manual_control)

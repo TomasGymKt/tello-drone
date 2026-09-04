@@ -31,6 +31,13 @@ class Settings:
     debug: bool = True
     is_emulator: bool = False
 
+    # ===== Flying =====
+
+    min_allowed_height: int = 120 # cm
+    max_allowed_height: int = 150 # cm
+    qr_code_height: int = 115 # cm
+    min_flying_height = 120 # cm
+
     # ===== Scanning =====
 
     qr_code_size_cm: float = 10.0
@@ -55,6 +62,10 @@ class Settings:
         if self.is_emulator:
             return LOCALHOST_IP
         return TELLO_IP
+    
+    @property
+    def optimal_drone_height(self) -> int:
+        return round((self.min_allowed_height + self.max_allowed_height + 2 * self.qr_code_height) / 4)
     
     @property
     def calibration_value(self) -> float:

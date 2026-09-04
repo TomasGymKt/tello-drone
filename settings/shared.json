@@ -1,5 +1,5 @@
 {
-  "default_profile": "emulator",
+  "default_profile": "TELLO-white",
   "validation_presets": {
     "verystrict": {
       "min_side_px": 40.0,

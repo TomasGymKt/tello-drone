@@ -43,7 +43,7 @@ def main():
 
     logger.info(f"{C.BOLD}Initialization complete{C.RESET}")
     try:
-        # fly_worker.start()
+        fly_worker.start()
         while True:
             frame = frame_reader.frame
             frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR) # Color correction
