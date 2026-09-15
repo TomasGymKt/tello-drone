@@ -7,7 +7,8 @@ from UI.elements import Text, TextStyle, Button, ButtonStyle, RadioGroup, Radio,
 from UI.windows.Window import Window
 from utils.common import create_blank_frame
 from utils.models import AlphaColor, Color, Padding, ScanResult
-import time
+
+from settings import settings
 
 if TYPE_CHECKING:
     from UI.windows.WindowController import WindowController
@@ -22,7 +23,7 @@ class DroneWindow(Window):
             window_controller: Controller that owns this window.
             window_name: OpenCV title and controller lookup key.
         """
-        super().__init__(window_controller, window_name)
+        super().__init__(window_controller, window_name, enabled_by_default=True)
         self._base_frame = create_blank_frame(600, 600)
     
     def _setup(self):
@@ -48,6 +49,8 @@ class DroneWindow(Window):
         self._flight_time_text = Text(7, 7+14*26, "Flight time: -- s")
         self._battery_text = Text(7, 7+15*26, "Battery: -- %")
         self._temperature_text = Text(7, 7+16*26, "Temperature: -- C | -- C")
+
+        self._optimal_height = Text(250, 7+11*26, "Optimal height: -- cm")
         
         
         # === Add elements to root ===
@@ -68,6 +71,8 @@ class DroneWindow(Window):
         self._root.add(self._flight_time_text)
         self._root.add(self._battery_text)
         self._root.add(self._temperature_text)
+
+        self._root.add(self._optimal_height)
         
     
     def _render(self, camera_frame, scan_result: ScanResult):
@@ -88,6 +93,8 @@ class DroneWindow(Window):
         self._flight_time_text.set_text(f"Flight time: {tello.get_flight_time()} s")
         self._battery_text.set_text(f"Battery: {tello.get_battery()} %")
         self._temperature_text.set_text(f"Temperature: {tello.get_lowest_temperature()} C | {tello.get_highest_temperature()} C")
+
+        self._optimal_height.set_text(f"Optimal height: {settings.optimal_drone_height} cm")
 
         self._root.render(frame)
         cv2.imshow(self.window_name, frame)

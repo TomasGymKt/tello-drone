@@ -4,8 +4,9 @@
   "min_allowed_height": 100,
   "max_allowed_height": 150,
   "qr_code_height": 101,
+  "flying_height": 110,
   "qr_code_size_cm": 10.0,
-  "camera_focal_length": 1000.0,
+  "camera_focal_length": 900.0,
   "scan_method_order": [
     "cv2"
   ],
@@ -16,6 +17,6 @@
     "period": 0.2,
     "max_gap_time": 2,
     "min_appearance": 2,
-    "dist_mult": 1.0
+    "dist_mult": 0.5
   }
 }

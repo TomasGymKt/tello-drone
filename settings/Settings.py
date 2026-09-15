@@ -21,7 +21,7 @@ class LongTermValidationSettings:
     #   = 1 scaned QR code per 100 ms => scanner has to be running at 10 FPS or more
     max_gap_time: float = 2 # Maximum time a zone stays active after it's QR code disappears
     min_appearance: int = 2 # Minimum amount of times a QR code has to appear in the same zone, for it to be valid
-    dist_mult: float = 0.5 # Radius multiplier of the zone; 1.0 = half QR code size
+    dist_mult: float = 1.0 # Radius multiplier of the zone; 1.0 = half QR code size
 
 @dataclass(slots=True)
 class Settings:
@@ -33,15 +33,12 @@ class Settings:
 
     # ===== Flying =====
 
-    min_allowed_height: int = 120 # cm
-    max_allowed_height: int = 150 # cm
-    qr_code_height: int = 115 # cm
-    min_flying_height = 120 # cm
+    optimal_drone_height: int = 135
 
     # ===== Scanning =====
 
     qr_code_size_cm: float = 10.0
-    camera_focal_length: float = 900.0 # = (qr code size in px) * (physical distance in cm) / (physical qr code size in cm)
+    camera_focal_length: float = 1000.0 # = (qr code size in px) * (physical distance in cm) / (physical qr code size in cm)
 
     scan_method_order: list[str] = field(default_factory=lambda: [
         ScanMethod.CV2,
@@ -62,10 +59,6 @@ class Settings:
         if self.is_emulator:
             return LOCALHOST_IP
         return TELLO_IP
-    
-    @property
-    def optimal_drone_height(self) -> int:
-        return round((self.min_allowed_height + self.max_allowed_height + 2 * self.qr_code_height) / 4)
     
     @property
     def calibration_value(self) -> float:
