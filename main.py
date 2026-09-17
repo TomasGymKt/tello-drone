@@ -107,6 +107,7 @@ if __name__ == "__main__":
         logger.info(f"{C.YELLOW}Running on {C.BOLD}EMULATOR{C.RESET}{C.YELLOW}!{C.RESET}")
 
     try:
+        tello.LOGGER.setLevel(30)
         main()
 
     except KeyboardInterrupt:

@@ -25,9 +25,9 @@ def get_xyz_move_cords(
     qr_code: QR_Code,
     deadzone_x_scale: float = 1.7,
     deadzone_y_scale: float = 1.25,
-    left_right_step_scale: float = 1.2,
-    forward_back_step_scale: float = 1.0,
-    up_down_step_scale: float = 0.8,
+    left_right_step_scale: float = 1.7,
+    forward_back_step_scale: float = 0.5,
+    up_down_step_scale: float = 1.1,
 ) -> tuple[int, int, int]:
     """Calculate drone movement required to center and distance the QR code."""
 
@@ -35,7 +35,7 @@ def get_xyz_move_cords(
 
     DEADZONE_X = 180  # px
     DEADZONE_Y = 150  # px
-    DEADZONE_DISTANCE = 5  # cm
+    DEADZONE_DISTANCE = 0  # cm
 
     ERROR_Y_OFFSET = 5  # px
 
@@ -54,25 +54,23 @@ def get_xyz_move_cords(
     deadzone_x = DEADZONE_X * (1 / distance_ratio) ** deadzone_x_scale
     deadzone_y = DEADZONE_Y * (1 / distance_ratio) ** deadzone_y_scale
 
+    if deadzone_x > 150 or deadzone_y > 150:
+        DEADZONE_DISTANCE = 150
+
     # Larger error -> larger step
     left_right_step = (BASE_STEP_SIZE * (abs(error_x) / ERROR_STEP_REFERENCE) ** left_right_step_scale)
-    left_right_step = min(left_right_step, 40)
+    left_right_step = min(max(22, left_right_step), 40)
     up_down_step = (BASE_STEP_SIZE * (abs(error_y) / ERROR_STEP_REFERENCE) ** up_down_step_scale)
-    up_down_step = min(up_down_step, 20)
+    up_down_step = min(max(20, up_down_step), 30)
 
     # Larger distance -> larger step
     forward_back_step = (BASE_DISTANCE_STEP_SIZE * distance_ratio ** forward_back_step_scale)
-    forward_back_step = min(forward_back_step, 40)
+    forward_back_step = min(max(22, forward_back_step), 30)
 
-    left_right_step   = 20
-    forward_back_step = 20
-    up_down_step      = 20
 
     left_right = 0
     forward_back = 0
     up_down = 0
-
-    print(forward_back_step)
 
     # Left / right
     if error_x > deadzone_x:
@@ -89,7 +87,7 @@ def get_xyz_move_cords(
     # Forward / back
     distance_error = distance - DISTANCE_FROM_CODE
 
-    if distance_error > DEADZONE_DISTANCE:
+    if distance_error > DEADZONE_DISTANCE - 5:
         forward_back = round(forward_back_step)
     elif distance_error < -DEADZONE_DISTANCE:
         forward_back = -round(forward_back_step)
@@ -123,8 +121,13 @@ def move_in_steps(xyz: tuple[int, int, int], speed: int = 9):
     
     # time.sleep(5)
 
-def move_slowly_in_steps(xyz: tuple[int, int, int], duration: float, sleep: float = 1.0):
+def move_slowly_in_steps(xyz: tuple[int, int, int], duration: float, sleep: float = 0.7):
     forward_back, left_right, up_down = xyz
+    a = "Forward" if forward_back > 0 else ("Back"  if forward_back < 0 else "")
+    b = "Left"    if left_right > 0   else ("Right" if left_right < 0   else "")
+    c = "Up"      if up_down > 0      else ("Down"  if up_down < 0      else "")
+    logger.info(f"Moving {", ".join(filter(None, [a, b, c]))} for {duration}s")
+
     tello.send_rc_control(-left_right, forward_back, up_down, 0)
     time.sleep(duration)
     tello.send_rc_control(0, 0, 0, 0)
@@ -138,23 +141,29 @@ def move_in_1D(xyz: tuple[int, int, int]):
     if axis == 0:
         return
 
-    # TODO: this function prioritizes going forward
-    if axis == forward_back:
+
+    if axis == left_right:
         if axis > 0:
+            logger.info(f"Moving left {axis} cm")
+            tello.move_left(axis)
+        else:
+            logger.info(f"Moving right {axis} cm")
+            tello.move_right(-axis)
+
+    elif axis == forward_back:
+        if axis > 0:
+            logger.info(f"Moving forward {axis} cm")
             tello.move_forward(axis)
         else:
+            logger.info(f"Moving back {axis} cm")
             tello.move_back(-axis)
-
-    elif axis == left_right:
-        if axis > 0:
-            tello.move_right(axis)
-        else:
-            tello.move_left(-axis)
 
     elif axis == up_down:
         if axis > 0:
+            logger.info(f"Moving up {axis} cm")
             tello.move_up(axis)
         else:
+            logger.info(f"Moving down {axis} cm")
             tello.move_down(-axis)
     
     
@@ -162,24 +171,32 @@ def move_in_1D(xyz: tuple[int, int, int]):
 
 def check_drone_height(allowed_variation: int = 30):
     current_height = tello.get_distance_tof()
-    delta = settings.optimal_drone_height - current_height
+    optimal = settings.optimal_drone_height
+    delta = optimal - current_height
 
-    if abs(delta) < max(allowed_variation, 20):
+    if abs(delta) < max(allowed_variation, 25):
         return False
     
     if delta > 0:
+        delta -= 5
+        logger.info(f"Drone is too low ({current_height}cm/{optimal}cm), going up {delta}cm")
         tello.move_up(delta)
     else:
-        tello.move_down(-delta)
+        delta = -delta - 5
+        logger.info(f"Drone is too high ({current_height}cm/{optimal}cm), going down {delta}cm")
+        tello.move_down(delta)
     return True
 
-# Times: 213s, 158s, 167s, 132s, 202s
+# Times: 213s, 158s, 167s, 132s, 202s, 132s, 160s, 162s, 140s, 148s, 132s, 173s, 108s
 
 class FlyLoop:
     def __init__(self):
-        self.last_seen_qr_at = time.perf_counter()
+        self.last_seen_qr_at = 0
         self.last_valid_command = ""
         self.is_ready_for_execution = False
+        self.last_distance_from_qr = 0
+
+        self._first_qr = False
 
     def _handle_no_qr(self, qr: QR_Code, max_blind_time: float = 5, extra_time: float = 2):
         if qr == None:
@@ -191,18 +208,39 @@ class FlyLoop:
         else:
             self.last_seen_qr_at = time.perf_counter()
     
+    def _handle_no_qr_v2(self, qr: QR_Code, velocity: int = 20, max_blind_time: float = 5):
+        if qr == None or qr.distance_cm > 200:
+            if not self._first_qr and time.perf_counter() - self.last_seen_qr_at > max_blind_time:
+                logger.info(f"No QR Code detected for {max_blind_time}s, moving forward...")
+                tello.send_rc_control(0, velocity, 0, 0)
+                self._first_qr = True
+            return
+        self.last_seen_qr_at = time.perf_counter()
+        
+        if self._first_qr:
+            logger.info("Detected a QR Code, stopped moving forward.")
+            tello.send_rc_control(0, -20, 0, 0)
+            time.sleep(0.5)
+            tello.send_rc_control(0, 0, 0, 0)
+            self._first_qr = False
+    
     def _movement_strategy(self, qr: QR_Code, is_valid_command: bool):
-        if qr.distance_cm < 60 and qr.distance_cm > 40:
+        if qr.distance_cm < 60 and qr.distance_cm > 45:
+            logger.success("Drone is in position to execute command")
             self.is_ready_for_execution = True
             return
+        
+        if qr.distance_cm < 80:
+            time.sleep(0.5)
 
         xyz = get_xyz_move_cords(qr)
+        print(xyz)
         
-        if qr.distance_cm > 120:
-            move_in_steps(xyz)
-        # elif qr.distance_cm > 100:
-        #     move_in_1D(xyz)
-        elif qr.distance_cm > 80:
+        if qr.distance_cm > 150:
+            move_slowly_in_steps(xyz, 1, 1.0)
+        elif qr.distance_cm > 120:
+            move_slowly_in_steps(xyz, 0.7, 0.8)
+        elif qr.distance_cm > 85:
             move_slowly_in_steps(xyz, 0.5)
         else:
             move_slowly_in_steps(xyz, 0.4)
@@ -211,19 +249,30 @@ class FlyLoop:
         command = self.last_valid_command
         
         if command == "vlevo":
-            logger.success("Rotating left")
+            logger.success("Executing command: Rotate left")
             tello.rotate_counter_clockwise(90)
-            tello.move_forward(60)
-            tello.move_right(50)
+            logger.info("Adjusting for offset...")
+            tello.send_rc_control(40, 50, 0, 0)
+            time.sleep(2)
+            logger.info("   > Done")
+            tello.send_rc_control(0, 0, 0, 0)
             
         elif command == "vpravo":
-            logger.success("Rotating right")
+            logger.success("Executing command: Rotate right")
+            target_yaw = tello.get_yaw() + 90
+            if target_yaw > 180: target_yaw = -360 + target_yaw
             tello.rotate_clockwise(90)
-            tello.move_forward(60)
-            tello.move_left(25)
+            logger.test(f"{target_yaw}  {tello.get_yaw()}")
+            logger.info("Adjusting for offset...")
+            tello.send_rc_control(0, 65, 0, 0)
+            time.sleep(2)
+            tello.send_rc_control(-30, 25, 0, 0)
+            time.sleep(0.8)
+            logger.info("   > Done")
+            tello.send_rc_control(0, 0, 0, 0)
             
         elif command == "přistát":
-            logger.success("Landing")
+            logger.success("Executing command: Land")
             tello.land()
             fly_worker.set_manual_control(True)
             
@@ -236,10 +285,12 @@ class FlyLoop:
 
         qr = shared_qr.get()
         
-        self._handle_no_qr(qr)
+        self._handle_no_qr_v2(qr)
         
         if qr == None:
             return
+        
+        self.last_distance_from_qr = qr.distance_cm
         
         text = (qr.text or "").lower()
         is_valid_command = text in ["vlevo", "vpravo", "přistát"]
@@ -256,7 +307,9 @@ class FlyLoop:
 
 
 def setup_automatic():
+    logger.info("Taking off...")
     tello.takeoff()
+    logger.info("   > Done")
 
 def hand_over_to_manual():
     if tello.is_flying:
@@ -267,8 +320,10 @@ class FlyWorker:
         self._condition = threading.Condition()
         self._is_running = False
         self._manual_control = True
-        self._keep_alive = True
+        self._keep_alive = False
         self._last_keep_alive = time.perf_counter()
+
+        self._manual_start_time = 0
         
         self.fly_loop = FlyLoop()
 
@@ -311,8 +366,13 @@ class FlyWorker:
             self._manual_control = enabled
             self._condition.notify_all()
 
+            if enabled:
+                logger.info(f"Was executing automatic sequence for {(time.time() - self._manual_start_time):.1f}s.")
+            else:
+                logger.info("Starting automatic sequnence")
+                self._manual_start_time = time.time()
+
     def _worker_loop(self) -> None:
-        self.fly_loop.last_seen_qr_at = time.perf_counter() # TODO: idk if necessary
         while True:
             with self._condition:
                 if not self._is_running:
@@ -331,7 +391,6 @@ class FlyWorker:
                         return
 
                 setup_automatic()
-                self.fly_loop.last_seen_qr_at = time.perf_counter() # TODO: idk if necessary
                 continue
 
             try:
@@ -340,6 +399,7 @@ class FlyWorker:
                 logger.error("An exeption occured in flying loop\n", e)
 
             if self._keep_alive and time.perf_counter() - self._last_keep_alive >= 8:
+                logger.debug("Keep alive")
                 tello.send_rc_control(0, 0, 0, 0)
                 self._last_keep_alive = time.perf_counter()
             time.sleep(0.1)

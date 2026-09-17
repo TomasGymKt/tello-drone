@@ -1,4 +1,6 @@
 import math
+import cv2
+import numpy as np
 import threading
 from dataclasses import asdict, dataclass
 from typing import NamedTuple
@@ -38,29 +40,94 @@ def qr_size(points: Corners) -> float:
 
 
 class QR_Code:
-    """Detected QR code with geometry, payload, and distance measurements."""
+  """Detected QR code with geometry, payload, and distance measurements."""
 
-    def __init__(self, points, text: str | None, frame):
-        """Create QR measurements from detected corners and source frame.
+  def __init__(self, points, text: str | None, frame):
+    """Create QR measurements from detected corners and source frame.
 
-        Args:
-            points: Four detected corners ordered clockwise from top-left.
-            text: Decoded payload, or None when decoding failed.
-            frame: Source image used to calculate center error.
-        """
-        self.points = Corners(
-            top_left=Int_Vector2(*points[0]),
-            top_right=Int_Vector2(*points[1]),
-            bottom_right=Int_Vector2(*points[2]),
-            bottom_left=Int_Vector2(*points[3]),
-        )
-        self.text = text
-        self.center_x = int(points[:, 0].mean())
-        self.center_y = int(points[:, 1].mean())
-        self.size = qr_size(self.points)
-        self.distance_cm = settings.calibration_value / self.size
-        self.error_x = self.center_x - frame.shape[1] // 2
-        self.error_y = self.center_y - frame.shape[0] // 2
+    Args:
+      points: Four detected corners ordered clockwise from top-left.
+      text: Decoded payload, or None when decoding failed.
+      frame: Source image used to calculate center error.
+    """
+    self.points = Corners(
+      top_left=Int_Vector2(*points[0]),
+      top_right=Int_Vector2(*points[1]),
+      bottom_right=Int_Vector2(*points[2]),
+      bottom_left=Int_Vector2(*points[3]),
+    )
+
+    self.text = text
+
+    self.center_x = int(points[:, 0].mean())
+    self.center_y = int(points[:, 1].mean())
+
+    self.size = qr_size(self.points)
+    self.distance_cm = settings.calibration_value / self.size
+
+    self.error_x = self.center_x - frame.shape[1] // 2
+    self.error_y = self.center_y - frame.shape[0] // 2
+
+    self.error_yaw = self._calculate_yaw(frame)
+
+  def _calculate_yaw(self, frame) -> float:
+    """Calculate yaw error needed to face the QR code perpendicularly."""
+
+    frame_height, frame_width = frame.shape[:2]
+
+    qr_size_cm = settings.qr_code_size_cm
+    half_size = qr_size_cm / 2
+
+    object_points = np.array([
+        [-half_size, -half_size, 0],  # top-left
+        [ half_size, -half_size, 0],  # top-right
+        [ half_size,  half_size, 0],  # bottom-right
+        [-half_size,  half_size, 0],  # bottom-left
+    ], dtype=np.float32)
+
+    image_points = np.array([
+        self.points.top_left,
+        self.points.top_right,
+        self.points.bottom_right,
+        self.points.bottom_left,
+    ], dtype=np.float32)
+
+    focal_length = settings.camera_focal_length
+
+    camera_matrix = np.array([
+        [focal_length, 0, frame_width / 2],
+        [0, focal_length, frame_height / 2],
+        [0, 0, 1],
+    ], dtype=np.float32)
+
+    distortion = np.zeros((5, 1), dtype=np.float32)
+
+    success, rvec, tvec = cv2.solvePnP(
+        object_points,
+        image_points,
+        camera_matrix,
+        distortion,
+        flags=cv2.SOLVEPNP_IPPE_SQUARE,
+    )
+
+    if not success:
+        return 0.0
+
+    rotation_matrix, _ = cv2.Rodrigues(rvec)
+
+    # Normal of the QR plane in camera coordinates.
+    normal = rotation_matrix[:, 2]
+
+    # The QR is a plane, so its normal can point in either direction.
+    # We always want the normal facing the camera.
+    if normal[2] < 0:
+        normal = -normal
+
+    error_yaw = math.degrees(
+        math.atan2(normal[0], normal[2])
+    )
+
+    return error_yaw
 
 class SharedQR:
     """Thread-safe holder for the most recently validated QR code."""
