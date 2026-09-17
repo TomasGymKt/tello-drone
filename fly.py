@@ -7,18 +7,6 @@ from utils.Logger import logger
 from settings import settings
 from utils.models import QR_Code
 
-# TODO: zkusit létat jenom pomocí jedné dimenze s move_*(), nikoliv ve 3D s go_xyz_speed()
-# připadá mi že dron je moc nestabilní ale při jednoduchých přikazech vypadá stabilní
-
-# TODO: jak obejít step_size limit >> možná můžeme udělat 25 doprava a 20 doleva aby výsledek byl 5 doprava
-
-# DONE: zkontolovat jestli x == dopředu/dozadu; y == doleva/doprava; z == nahoru/dolu
-#   +x == forward, +y == left, +z == up
-# IDEA asi ne: možná by dávalo smysl prohodit znaménko left_right v get_xyz_move_cords
-
-# TODO: dynamický step_size nejlépe na zálkadě vzálenosti, teď je jenom: +20, 0, -20
-# TODO: dynamický DEADZONEy
-
 # TODO: yaw control, if necessary
 
 def get_xyz_move_cords(
@@ -252,21 +240,23 @@ class FlyLoop:
             logger.success("Executing command: Rotate left")
             tello.rotate_counter_clockwise(90)
             logger.info("Adjusting for offset...")
-            tello.send_rc_control(40, 50, 0, 0)
+            tello.send_rc_control(0, 65, 0, 0)
             time.sleep(2)
+            tello.send_rc_control(30, 30, 0, 0)
+            time.sleep(0.8)
             logger.info("   > Done")
             tello.send_rc_control(0, 0, 0, 0)
             
         elif command == "vpravo":
             logger.success("Executing command: Rotate right")
-            target_yaw = tello.get_yaw() + 90
-            if target_yaw > 180: target_yaw = -360 + target_yaw
+            # target_yaw = tello.get_yaw() + 90
+            # if target_yaw > 180: target_yaw = -360 + target_yaw
             tello.rotate_clockwise(90)
-            logger.test(f"{target_yaw}  {tello.get_yaw()}")
+            # logger.test(f"{target_yaw}  {tello.get_yaw()}")
             logger.info("Adjusting for offset...")
             tello.send_rc_control(0, 65, 0, 0)
             time.sleep(2)
-            tello.send_rc_control(-30, 25, 0, 0)
+            tello.send_rc_control(-30, 30, 0, 0)
             time.sleep(0.8)
             logger.info("   > Done")
             tello.send_rc_control(0, 0, 0, 0)
