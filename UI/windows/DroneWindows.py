@@ -24,7 +24,7 @@ class DroneWindow(Window):
             window_name: OpenCV title and controller lookup key.
         """
         super().__init__(window_controller, window_name, enabled_by_default=True)
-        self._base_frame = create_blank_frame(600, 600)
+        self._base_frame = create_blank_frame(400, 600)
     
     def _setup(self):
         """Create template elements."""
@@ -50,7 +50,7 @@ class DroneWindow(Window):
         self._battery_text = Text(7, 7+15*26, "Battery: -- %")
         self._temperature_text = Text(7, 7+16*26, "Temperature: -- C | -- C")
 
-        self._optimal_height = Text(250, 7+11*26, "Optimal height: -- cm")
+        self._optimal_height = Text(7, 7+17*26, "Optimal height: -- cm")
         
         
         # === Add elements to root ===

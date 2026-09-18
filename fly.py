@@ -185,16 +185,6 @@ class FlyLoop:
         self.last_distance_from_qr = 0
 
         self._first_qr = False
-
-    def _handle_no_qr(self, qr: QR_Code, max_blind_time: float = 5, extra_time: float = 2):
-        if qr == None:
-            # if a qr code is not seen in last max_blind_time seconds move forward
-            # then every extra_time seconds move forward if still not seen
-            if time.perf_counter() - self.last_seen_qr_at > max_blind_time:
-                tello.move_forward(40)
-                self.last_seen_qr_at += extra_time
-        else:
-            self.last_seen_qr_at = time.perf_counter()
     
     def _handle_no_qr_v2(self, qr: QR_Code, velocity: int = 20, max_blind_time: float = 5):
         if qr == None or qr.distance_cm > 200:
@@ -222,7 +212,6 @@ class FlyLoop:
             time.sleep(0.5)
 
         xyz = get_xyz_move_cords(qr)
-        print(xyz)
         
         if qr.distance_cm > 150:
             move_slowly_in_steps(xyz, 1, 1.0)
@@ -256,7 +245,7 @@ class FlyLoop:
             logger.info("Adjusting for offset...")
             tello.send_rc_control(0, 65, 0, 0)
             time.sleep(2)
-            tello.send_rc_control(-30, 30, 0, 0)
+            tello.send_rc_control(-30, 30, 0, 0) #Kdyz bude v zatacce litat moc doleva tak tohle upravit (prvni cislo - zapor znamena vic doleva)
             time.sleep(0.8)
             logger.info("   > Done")
             tello.send_rc_control(0, 0, 0, 0)

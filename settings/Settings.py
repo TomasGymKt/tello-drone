@@ -37,7 +37,7 @@ class Settings:
 
     # ===== Scanning =====
 
-    qr_code_size_cm: float = 10.0
+    qr_code_size_cm: float = 10.0 # cm
     camera_focal_length: float = 1000.0 # = (qr code size in px) * (physical distance in cm) / (physical qr code size in cm)
 
     scan_method_order: list[str] = field(default_factory=lambda: [

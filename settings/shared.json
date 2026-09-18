@@ -1,4 +1,5 @@
-{
+{ 
+  "default_profile": "emulator",
   "default_profile": null,
   "validation_presets": {
     "verystrict": {
